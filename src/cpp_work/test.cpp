@@ -23,15 +23,21 @@ int main(void)
 
 	mouseParam mouseEvent;
 
+	img = cv::imread("../../res/image/capture_5.png");
+	unionLabel(&img, &img);
 	cv::namedWindow(win_name);
 	
 	cv::setMouseCallback(win_name, CallBackFunc, &mouseEvent);
 
+	
+	/*
+	// create trackbar to arrange HSV value
 	cv::createTrackbar("H", win_name, &H, 360, 0, 0);
 	cv::createTrackbar("S", win_name, &S, 255, 0, 0);
 	cv::createTrackbar("V", win_name, &V, 255, 0, 0);
 	cv::createTrackbar("range", win_name, &range, 255, 0, 0);
-
+	*/
+	
 	while(1)
 	{
 		key = cv::waitKey(100);
@@ -42,12 +48,12 @@ int main(void)
 
 		// reset image
 		//img = cv::imread("../../res/image/capture_1.png");
-		img = cv::imread("../../res/image/capture_5.png");
+		//img = cv::imread("../../res/image/capture_5.png");
 
 		// extract color
 		//colorExtraction(&img, &img, cv::COLOR_BGR2HSV, H-range, H+range, S-range, S+range, V-range, V+range);
 		//colorExtraction(&img, &img, cv::COLOR_BGR2HSV, H-range, H+range, 0, 255, 0, 255);
-		colorExtraction(&img, &img, cv::COLOR_BGR2HSV, 0, 360, S-range, S+range, 0, 255);
+		//colorExtraction(&img, &img, cv::COLOR_BGR2HSV, 0, 360, S-range, S+range, 0, 255);
 		//colorExtraction(&img, &img, cv::COLOR_BGR2HSV, 0, 0, 0, 0, V-range, V+range);
 
 		_x = img.cols;
@@ -85,6 +91,7 @@ int main(void)
 		// finish if put esc key
 		if(key == 27) break;
 	}
+	
 	return 0;
 }
 

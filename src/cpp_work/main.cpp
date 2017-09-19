@@ -51,6 +51,14 @@ int main(int argc, char* argv[])
 	cv::namedWindow(output_win);
 	cv::namedWindow(label_win);
 
+	// get 3 flame
+	cap >> frame;
+	extractFrame(&frame, &im1);
+	cap >> frame;
+	extractFrame(&frame, &im2);
+	cap >> frame;
+	extractFrame(&frame, &im3);
+
 	while(1) {
 
 		// get input key
@@ -62,15 +70,7 @@ int main(int argc, char* argv[])
 			break;
 		}
 		
-		// flame difference
-		// get 3 flame
-		cap >> frame;
-		extractFrame(&frame, &im1);
-		cap >> frame;
-		extractFrame(&frame, &im2);
-		cap >> frame;
-		extractFrame(&frame, &im3);
-
+		// move object detection from 3 frames
 		moveObjDetection(im1, im2, im3, &im_mask);
 
 		// label image

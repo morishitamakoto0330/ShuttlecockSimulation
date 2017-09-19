@@ -156,6 +156,7 @@ void labeling(cv::Mat* input, cv::Mat* output)
 		area[i-1] = param[cv::ConnectedComponentsTypes::CC_STAT_AREA];
 	}
 	
+	/*
 	// debug---------------
 	int _x = 0;
 	int count = 0;
@@ -171,6 +172,7 @@ void labeling(cv::Mat* input, cv::Mat* output)
 	std::cout << std::endl;
 	std::cout << "num_good=" << count << ", ";
 	std::cout << "num=" << labelNum << std::endl;
+	*/
 
 	*output = dst.clone();
 }
@@ -214,6 +216,30 @@ void moveObjDetection(cv::Mat im1, cv::Mat im2, cv::Mat im3, cv::Mat* dst)
 
 	*dst = im_mask.clone();
 }
+
+
+/*
+ * union lablel and delete noise
+ */
+void unionLabel(cv::Mat* src, cv::Mat* dst)
+{
+	// access pixel
+	for(int y = 0; y < src->rows; y++)
+	{
+		for(int x = 0; x < src->cols; x++)
+		{
+			for(int c = 0; c < src->channels(); c++)
+			{
+				int a = src->data[y*(src->step) + x*(src->elemSize()) + c];
+				std::cout << a << " ";
+				dst->data[y*(src->step) + x*(src->elemSize()) + c] = 0;
+			}
+		}
+		std::cout << std::endl;
+		break;
+	}
+}
+
 
 
 
