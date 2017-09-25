@@ -18,16 +18,56 @@ int main(void)
 	int key;
 	int H, S, V;
 	int range;
-	cv::Mat img;
-	std::string win_name = "test";
-
-	mouseParam mouseEvent;
-
-	img = cv::imread("../../res/image/capture_5.png");
-	unionLabel(&img, &img);
-	cv::namedWindow(win_name);
 	
-	cv::setMouseCallback(win_name, CallBackFunc, &mouseEvent);
+	cv::Mat frame, img;
+	cv::Mat img_back = cv::imread("../../res/image/capture_36400.png");
+	
+	cv::VideoCapture cap("../../res/movie/00000.MTS");
+
+	if(!cap.isOpened()) return -1;
+	std::cout << "MTS file open." << std::endl;
+
+	
+	std::string input = "input";
+	std::string output = "output";
+	
+	cv::namedWindow(input);
+	cv::namedWindow(output);
+
+	/*
+	while(1)
+	{
+		key = cv::waitKey(100);
+		
+		cap >> frame;
+		img = frame.clone();
+
+		// soooooooogoooooooooooooooood!!!!!!!!!!!
+		deinterlace(&frame, &img);
+
+		// show image
+		cv::resize(frame, frame, cv::Size(), 0.6, 0.6);
+		cv::imshow(input, frame);
+		cv::resize(img, img, cv::Size(), 0.6, 0.6);
+		cv::imshow(output, img);
+		
+		if(key == 27) break;
+	}
+	*/
+	// move frame position
+	//if(cap.set(CV_CAP_PROP_POS_MSEC, 1200000.0)) cap >> frame;
+	//else std::cout << "error!" << std::endl;
+	
+
+	//std::string win_name = "test";
+
+	//mouseParam mouseEvent;
+
+	//img = cv::imread("../../res/image/capture_5.png");
+	
+	//cv::namedWindow(win_name);
+	
+	//cv::setMouseCallback(win_name, CallBackFunc, &mouseEvent);
 
 	
 	/*
@@ -38,6 +78,8 @@ int main(void)
 	cv::createTrackbar("range", win_name, &range, 255, 0, 0);
 	*/
 	
+
+	/*
 	while(1)
 	{
 		key = cv::waitKey(100);
@@ -91,7 +133,7 @@ int main(void)
 		// finish if put esc key
 		if(key == 27) break;
 	}
-	
+	*/
 	return 0;
 }
 

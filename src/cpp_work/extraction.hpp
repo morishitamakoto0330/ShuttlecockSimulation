@@ -17,7 +17,7 @@ void colorExtraction(cv::Mat* src, cv::Mat* dst,
 
 void labeling(cv::Mat* src, cv::Mat* dst);
 
-void unionLabel(cv::Mat* src, cv::Mat* dst);
+void deinterlace(cv::Mat* src, cv::Mat* dst);
 
 void moveObjDetection(cv::Mat im1, cv::Mat im2, cv::Mat im3, cv::Mat* dst);
 

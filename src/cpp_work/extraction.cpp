@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "./extraction.hpp"
+#include "./debug.hpp"
 
 /*
  * extract color------------------------------------------------
@@ -146,7 +147,7 @@ void labeling(cv::Mat* input, cv::Mat* output)
 		double *param = centroids.ptr<double>(i);
 
 		x_gravity[i-1] = static_cast<int>(param[0]);
-		y_gravity[i-1] = static_cast<int>(param[0]);
+		y_gravity[i-1] = static_cast<int>(param[1]);
 	}
 
 	// area
@@ -156,6 +157,27 @@ void labeling(cv::Mat* input, cv::Mat* output)
 		area[i-1] = param[cv::ConnectedComponentsTypes::CC_STAT_AREA];
 	}
 	
+	// get max area value
+	int maxValue = 0;
+	int maxIndex = 0;
+	int x,y;
+	
+	for(int i = 0; i < labelNum; i++)
+	{
+		if((maxValue < area[i]) && (670 <= x_gravity[i]) && (x_gravity[i] <= 1350))
+		{
+			maxValue = area[i];
+			maxIndex = i;
+		}
+	}
+
+	x = x_gravity[maxIndex];
+	y = y_gravity[maxIndex];
+	// print maxValue
+	std::cout << "最大面積: " << maxValue << ", index: " << maxIndex;
+	std::cout << ", 重心座標(x,y)=(" << x << "," << y << ")" << std::endl;
+	if(maxValue >= 20) writePoint(x,y);
+
 	/*
 	// debug---------------
 	int _x = 0;
@@ -163,14 +185,14 @@ void labeling(cv::Mat* input, cv::Mat* output)
 	for(int i = 0; i < labelNum; i++)
 	{
 		_x = x_gravity[i];
-		if((670 <= _x) && (_x <= 1350) && (10 <= area[i]))
+		if((670 <= _x) && (_x <= 1350))
 		{
 			count++;
-			std::cout << i << ":" << area[i] << ", ";
+			//std::cout << i << ":" << area[i] << ", ";
 		}
 	}
 	std::cout << std::endl;
-	std::cout << "num_good=" << count << ", ";
+	std::cout << "num_inside=" << count << ", ";
 	std::cout << "num=" << labelNum << std::endl;
 	*/
 
@@ -219,25 +241,51 @@ void moveObjDetection(cv::Mat im1, cv::Mat im2, cv::Mat im3, cv::Mat* dst)
 
 
 /*
- * union lablel and delete noise
+ * deinterlace
  */
-void unionLabel(cv::Mat* src, cv::Mat* dst)
+void deinterlace(cv::Mat* src, cv::Mat* dst)
 {
-	// access pixel
-	for(int y = 0; y < src->rows; y++)
+	cv::Mat img = src->clone();
+
+	char* line1;
+	char* line2;
+	char* line3;
+	char* data = (char*)img.data;
+
+	int index;
+	int step = img.step;
+	int height = img.rows;
+	int width = img.cols;
+
+	for(int y = 1; y < height-1; y+=2)
 	{
-		for(int x = 0; x < src->cols; x++)
+		// set focus 3 lines
+		line1 = data + ((y-1) * step);
+		line2 = data + ((y) * step);
+		line3 = data + ((y+1) * step);
+
+		for(int x = 0; x < width; x++)
 		{
-			for(int c = 0; c < src->channels(); c++)
+			for(int c = 0; c < img.channels(); c++)
 			{
-				int a = src->data[y*(src->step) + x*(src->elemSize()) + c];
-				std::cout << a << " ";
-				dst->data[y*(src->step) + x*(src->elemSize()) + c] = 0;
+				// center line value = upper/2 + lower/2;
+				index = x * img.elemSize() + c;
+				line2[index] = 0.5f*(unsigned char)line1[index] + 0.5f*(unsigned char)line2[index];
+				//int a = img.data[y*(img.step) + x*(img.elemSize()) + c];
+				//img.data[y*(img.step) + x*(img.elemSize()) + c] = 0;
 			}
 		}
-		std::cout << std::endl;
-		break;
 	}
+
+	if(height > 1 && height % 2 == 0)
+	{
+		line1 = data + ((height-2) * step);
+		line2 = data + ((height-1) * step);
+		memcpy(line2, line1, width);
+	}
+
+	// output
+	dst->data = (unsigned char*)data;
 }
 
 

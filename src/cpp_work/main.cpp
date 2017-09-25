@@ -14,7 +14,8 @@
 static const int threshold = 3;
 
 
-void extractFrame(cv::Mat* frame, cv::Mat* im);
+//void extractFrame(cv::Mat* frame, cv::Mat* im);
+void myMask(cv::Mat* src, cv::Mat* dst);
 
 int main(int argc, char* argv[])
 {
@@ -30,7 +31,6 @@ int main(int argc, char* argv[])
 	// valiable
 	int index = 1;
 	int test_index = 1;
-	int x, y;
 	int x_lower = 670;
 	int x_upper = 1350;
 	
@@ -44,6 +44,7 @@ int main(int argc, char* argv[])
 
 	mouseParam mouseEvent;
 	
+	// set mouse event
 	cv::setMouseCallback(input_win, CallBackFunc, &mouseEvent);
 
 	// create window
@@ -53,11 +54,14 @@ int main(int argc, char* argv[])
 
 	// get 3 flame
 	cap >> frame;
-	extractFrame(&frame, &im1);
+	myMask(&frame, &frame);
+	cvtColor(frame, im1, cv::COLOR_BGR2GRAY);
 	cap >> frame;
-	extractFrame(&frame, &im2);
+	myMask(&frame, &frame);
+	cvtColor(frame, im2, cv::COLOR_BGR2GRAY);
 	cap >> frame;
-	extractFrame(&frame, &im3);
+	myMask(&frame, &frame);
+	cvtColor(frame, im3, cv::COLOR_BGR2GRAY);
 
 	while(1) {
 
@@ -76,16 +80,6 @@ int main(int argc, char* argv[])
 		// label image
 		labeling(&im_mask, &labeledImage);
 
-		// test
-		cv::Mat test_img = labeledImage.clone();
-		cv::line(test_img, cv::Point(x_lower,0), cv::Point(x_lower,test_img.rows-1), cv::Scalar(0,255,0), 1, cv::LINE_AA, 0);
-		cv::line(test_img, cv::Point(x_upper,0), cv::Point(x_upper,test_img.rows-1), cv::Scalar(0,255,0), 1, cv::LINE_AA, 0);
-		std::string test_str = "../../res/image/test_";
-		test_str += std::to_string(test_index) +  ".png";
-		cv::imwrite(test_str, test_img);
-
-		test_index++;
-
 		// show input and output
 		cv::resize(frame, frame, cv::Size(), 0.6, 0.6);
 		cv::imshow(input_win, frame);
@@ -94,24 +88,15 @@ int main(int argc, char* argv[])
 		cv::resize(labeledImage, labeledImage, cv::Size(), 0.6, 0.6);
 		cv::imshow(label_win, labeledImage);
 
-		// save image if put "s" key
-		if(key == 115) {
-			std::string img_name = "../../res/image/capture_" + std::to_string(index) + ".png";
-			cv::imwrite(img_name, frame);
+		
+		// save
+		std::string img_name = "../../res/image/result/capture_masked_deinterlace_" + std::to_string(index) + ".png";
+		index++;
+		cv::imwrite(img_name, labeledImage);
 
-			std::cout << "succeed in saving capture." << std::endl;
-			
-			index++;
-		}
 
-		/*
-		// get mouse position
-		x = mouseEvent.x;
-		y = mouseEvent.y;
 
-		// print (x,y) (B,G,R) (H,S,V)
-		dispPixelValue(frame, x, y);
-		*/
+
 
 		// shift 3 frames
 		im2.copyTo(im1, im2);
@@ -122,14 +107,18 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
-void extractFrame(cv::Mat* frame, cv::Mat* im)
+// background image mask
+void myMask(cv::Mat* src, cv::Mat* dst)
 {
-	cv::Mat extracted;
-	colorExtraction(frame, &extracted, cv::COLOR_BGR2HSV, 0, 360, 0, 255, 0, 255);
-	cvtColor(extracted, *im, cv::COLOR_BGR2GRAY);
+	cv::Mat diff;
+	cv::Mat img_back = cv::imread("../../res/image/capture_36400.png");
+	
+	deinterlace(&img_back, &img_back);
+	deinterlace(src, src);
+
+	cv::absdiff(*src, img_back, diff);
+	cv::bitwise_and(*src, diff, *dst);
 }
-
-
 
 
 

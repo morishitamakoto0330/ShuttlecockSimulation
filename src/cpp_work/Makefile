@@ -10,6 +10,8 @@ run:
 	./main
 
 clean:
-	rm -f main test *.o *.out ../../res/image/test_*
+	#rm -f main test *.o *.out ../../res/image/test_*
+	rm -f main test *.o *.out
+
 
 
