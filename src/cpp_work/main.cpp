@@ -11,16 +11,12 @@
 #include "./extraction.hpp"
 #include "./debug.hpp"
 
-static const int threshold = 3;
-
-
-//void extractFrame(cv::Mat* frame, cv::Mat* im);
-void myMask(cv::Mat* src, cv::Mat* dst);
 
 int main(int argc, char* argv[])
 {
 	// open file
-	cv::VideoCapture cap("../../res/movie/00000.MTS");
+	//cv::VideoCapture cap("../../res/movie/interlace_1.MTS");
+	cv::VideoCapture cap("../../res/movie/progressive_1.MTS");
 	
 	// check file open
 	if(!cap.isOpened()) {
@@ -39,11 +35,13 @@ int main(int argc, char* argv[])
 	std::string label_win = "label";
 
 	cv::Mat im1, im2, im3, frame;
-	cv::Mat im_mask;
+	cv::Mat im_mask1, im_mask2, im_mask3;
+	cv::Mat im_mask, im_mask_old, im_mask_init;
 	cv::Mat labeledImage;
 
 	mouseParam mouseEvent;
-	
+
+
 	// set mouse event
 	cv::setMouseCallback(input_win, CallBackFunc, &mouseEvent);
 
@@ -54,21 +52,22 @@ int main(int argc, char* argv[])
 
 	// get 3 flame
 	cap >> frame;
-	myMask(&frame, &frame);
 	cvtColor(frame, im1, cv::COLOR_BGR2GRAY);
 	cap >> frame;
-	myMask(&frame, &frame);
 	cvtColor(frame, im2, cv::COLOR_BGR2GRAY);
 	cap >> frame;
-	myMask(&frame, &frame);
 	cvtColor(frame, im3, cv::COLOR_BGR2GRAY);
 
-	while(1) {
+	// init mask image
+	im_mask1 = im1.clone();
+	im_mask2 = im2.clone();
+	im_mask3 = im3.clone();
 
+	while(1) {
 		// get input key
 		int key = cv::waitKey(20);
 
-		// finish processing
+		// finish processing if put ESC
 		if(key == 27) {
 			cv::destroyAllWindows();
 			break;
@@ -77,9 +76,13 @@ int main(int argc, char* argv[])
 		// move object detection from 3 frames
 		moveObjDetection(im1, im2, im3, &im_mask);
 
-		// label image
-		labeling(&im_mask, &labeledImage);
+		// remove noise by erode and dilate
+		erode_dilate(im_mask, &im_mask, 1);
 
+		// label image
+		labeling(im_mask, &labeledImage);
+
+		/*
 		// show input and output
 		cv::resize(frame, frame, cv::Size(), 0.6, 0.6);
 		cv::imshow(input_win, frame);
@@ -87,16 +90,35 @@ int main(int argc, char* argv[])
 		cv::imshow(output_win, im_mask);
 		cv::resize(labeledImage, labeledImage, cv::Size(), 0.6, 0.6);
 		cv::imshow(label_win, labeledImage);
-
+		*/
+		im_mask_init = cv::Mat::zeros(cv::Size(im1.cols, im1.rows), CV_8UC1);
 		
-		// save
-		std::string img_name = "../../res/image/result/capture_masked_deinterlace_" + std::to_string(index) + ".png";
+		cv::bitwise_or(im_mask1, im_mask_init, im_mask_init);
+		cv::bitwise_or(im_mask2, im_mask_init, im_mask_init);
+		cv::bitwise_or(im_mask3, im_mask_init, im_mask_init);
+		
+		cv::resize(im_mask_init, im_mask_init, cv::Size(), 0.5, 0.5);
+		cv::imshow("mask", im_mask_init);
+		/*
+		cv::Mat a,b;
+
+		create_image(im_mask, &a, im_mask);
+		combine_image(a, labeledImage, &b);
+		cv::resize(b, b, cv::Size(), 0.33, 0.33);
+		cv::imshow("moving object <-     -> labeling", b);
+		*/
+
+		/*
+		// save capture
+		//std::string img_name = "../../res/image_progressive/result/MOD_label_" + std::to_string(index) + ".png";
+		std::string img_name = "../../res/image_progressive/result/MOD_label_erodeDilate_" + std::to_string(index) + ".png";
 		index++;
 		cv::imwrite(img_name, labeledImage);
+		*/
 
-
-
-
+		im_mask2.copyTo(im_mask1);
+		im_mask3.copyTo(im_mask2);
+		im_mask3 = im_mask.clone();
 
 		// shift 3 frames
 		im2.copyTo(im1, im2);
@@ -107,18 +129,7 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
-// background image mask
-void myMask(cv::Mat* src, cv::Mat* dst)
-{
-	cv::Mat diff;
-	cv::Mat img_back = cv::imread("../../res/image/capture_36400.png");
-	
-	deinterlace(&img_back, &img_back);
-	deinterlace(src, src);
 
-	cv::absdiff(*src, img_back, diff);
-	cv::bitwise_and(*src, diff, *dst);
-}
 
 
 

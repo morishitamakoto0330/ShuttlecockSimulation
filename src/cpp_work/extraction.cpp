@@ -98,16 +98,16 @@ void colorExtraction(cv::Mat* src, cv::Mat* dst,
  * labeling--------------------------------------------------------
  */
 
-void labeling(cv::Mat* input, cv::Mat* output)
+void labeling(cv::Mat src, cv::Mat* dst)
 {
 	cv::Mat bin;
 	cv::Mat stats;
 	cv::Mat centroids;
 
 	// binarization
-	cv::threshold(*input, bin, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+	cv::threshold(src, bin, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
 	// create image to label
-	cv::Mat labelImage(input->size(), CV_32S);
+	cv::Mat labelImage(src.size(), CV_32S);
 
 	// labeling(simple)
 	//int labelNum = cv::connectedComponents(bin, labelImage, 8);
@@ -123,17 +123,18 @@ void labeling(cv::Mat* input, cv::Mat* output)
 	}
 
 	// create result image
-	cv::Mat dst(input->size(), CV_8UC3);
-	for(int y = 0; y < dst.rows; y++)
+	cv::Mat _dst(src.size(), CV_8UC3);
+	for(int y = 0; y < _dst.rows; y++)
 	{
-		for(int x = 0; x < dst.cols; x++)
+		for(int x = 0; x < _dst.cols; x++)
 		{
 			int label = labelImage.at<int>(y, x);
-			cv::Vec3b &pixel = dst.at<cv::Vec3b>(y, x);
+			cv::Vec3b &pixel = _dst.at<cv::Vec3b>(y, x);
 			pixel = colors[label];
 		}
 	}
 
+	/*
 	// get parameter(center of gravity, area value)
 	
 	int x_gravity[labelNum];
@@ -177,26 +178,9 @@ void labeling(cv::Mat* input, cv::Mat* output)
 	std::cout << "最大面積: " << maxValue << ", index: " << maxIndex;
 	std::cout << ", 重心座標(x,y)=(" << x << "," << y << ")" << std::endl;
 	if(maxValue >= 20) writePoint(x,y);
-
-	/*
-	// debug---------------
-	int _x = 0;
-	int count = 0;
-	for(int i = 0; i < labelNum; i++)
-	{
-		_x = x_gravity[i];
-		if((670 <= _x) && (_x <= 1350))
-		{
-			count++;
-			//std::cout << i << ":" << area[i] << ", ";
-		}
-	}
-	std::cout << std::endl;
-	std::cout << "num_inside=" << count << ", ";
-	std::cout << "num=" << labelNum << std::endl;
 	*/
 
-	*output = dst.clone();
+	*dst = _dst.clone();
 }
 
 
@@ -243,9 +227,9 @@ void moveObjDetection(cv::Mat im1, cv::Mat im2, cv::Mat im3, cv::Mat* dst)
 /*
  * deinterlace
  */
-void deinterlace(cv::Mat* src, cv::Mat* dst)
+void deinterlace(cv::Mat src, cv::Mat* dst)
 {
-	cv::Mat img = src->clone();
+	cv::Mat img = src.clone();
 
 	char* line1;
 	char* line2;
@@ -287,6 +271,87 @@ void deinterlace(cv::Mat* src, cv::Mat* dst)
 	// output
 	dst->data = (unsigned char*)data;
 }
+
+
+/*
+ * remove noise by erode and dilate 
+ */
+void erode_dilate(cv::Mat src, cv::Mat* dst, int num)
+{
+	cv::Mat img = src.clone();
+	
+	cv::erode(img, img, cv::Mat(), cv::Point(-1, -1), num);
+	cv::dilate(img, img, cv::Mat(), cv::Point(-1, -1), num);
+
+	*dst = img.clone();
+}
+
+
+/*
+ * combine 2 images
+ */
+void combine_image(cv::Mat im1, cv::Mat im2, cv::Mat* dst)
+{
+	int width, height;
+
+	width = im1.cols;
+	height = im1.rows;
+
+	// set output image
+	cv::Mat output = cv::Mat::zeros(cv::Size(width*2, height), CV_8UC3);
+
+	// set area
+	cv::Rect roi1(0, 0, width, height);
+	cv::Rect roi2(width, 0, width, height);
+
+	// create roi image
+	// copy to certain area
+	cv::Mat output_roi = output(roi1);
+	cv::Mat im1_roi = im1(roi1);
+
+	im1_roi.copyTo(output_roi);
+	
+	cv::Mat output_roi2 = output(roi2);
+	cv::Mat im2_roi = im2(roi1);
+	
+	im2_roi.copyTo(output_roi2);
+
+	// set rect
+	cv::rectangle(output, roi2, cv::Scalar(0, 0, 255), 2);
+	
+	*dst = output.clone();
+}
+
+
+/*
+ * create white color image
+ */
+void create_image(cv::Mat src, cv::Mat* dst, cv::Mat mask)
+{
+	int width = src.cols;
+	int height = src.rows;
+
+	cv::Mat img = cv::Mat::zeros(cv::Size(width, height), CV_8UC3);
+
+	for(int j = 0; j < height; j++)
+	{
+		for(int i = 0; i < width; i++)
+		{
+			for(int c = 0; c < 3; c++)
+			{
+				img.at<cv::Vec3b>(j, i)[c] = 255;
+			}
+		}
+	}
+
+	img.copyTo(*dst, mask);
+}
+
+
+
+
+
+
 
 
 

@@ -1,6 +1,6 @@
 build:
 	clang++ extraction.cpp -c -o extraction.o
-	clang++ test.cpp -c -o test.o
+	clang++ test.cpp -c -o test.o -std=c++11
 	clang++ main.cpp -c -o main.o
 	clang++ debug.cpp -c -o debug.o
 	clang++ main.o extraction.o debug.o -o main `pkg-config --cflags opencv` `pkg-config --libs opencv`

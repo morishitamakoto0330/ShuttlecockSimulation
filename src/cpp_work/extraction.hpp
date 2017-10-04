@@ -15,10 +15,16 @@ void colorExtraction(cv::Mat* src, cv::Mat* dst,
 		int ch3Lower, int ch3Upper
 );
 
-void labeling(cv::Mat* src, cv::Mat* dst);
+void labeling(cv::Mat src, cv::Mat* dst);
 
-void deinterlace(cv::Mat* src, cv::Mat* dst);
+void deinterlace(cv::Mat src, cv::Mat* dst);
 
 void moveObjDetection(cv::Mat im1, cv::Mat im2, cv::Mat im3, cv::Mat* dst);
+
+void erode_dilate(cv::Mat src, cv::Mat* dst, int num);
+
+void combine_image(cv::Mat im1, cv::Mat im2, cv::Mat* dst);
+
+void create_image(cv::Mat src, cv::Mat* dst, cv::Mat mask);
 
 
