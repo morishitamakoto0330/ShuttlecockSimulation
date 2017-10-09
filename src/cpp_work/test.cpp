@@ -7,7 +7,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <map>
+#include <math.h>
 
 #include "./extraction.hpp"
 #include "./debug.hpp"
@@ -15,35 +15,15 @@
 int main(void)
 {
 
-	std::map<int, int> m;
-
-	m.insert(std::make_pair(0, 0));
-	/*
-	std::vector<std::vector<int>> v;
-	std::vector<int> _v(10, 5);
-
-	
-	for(int i = 0; i != _v.size(); i++)
-	{
-		v.push_back(_v);
-	}
-
-	for(int i = 0; i != v.size(); i++)
-	{
-		for(int j = 0; j != v[i].size(); j++)
-		{
-			std::cout << i << "," << j << ":" << v[i][j] << " ";
-		}
-		std::cout << std::endl;
-	}
-	*/
-
-
-	/*
 	int key;
+	int x1 = 1090;
+	int x2 = 850;
+
+	/*
+	std::string img_str = "../../res/image_progressive/shuttle_point/shuttle_point.png";
 
 	cv::Mat frame, img;
-	cv::Mat img_back = cv::imread("../../res/image_interlace/capture_36400.png");
+	//cv::Mat img = cv::imread(img_str);
 	
 	cv::VideoCapture cap("../../res/movie/progressive_1.MTS");
 
@@ -51,21 +31,26 @@ int main(void)
 	std::cout << "MTS file open." << std::endl;
 
 	
-	while(1)
-	{
+	while(1) {
 		key = cv::waitKey(100);
 		
 		cap >> frame;
 		img = frame.clone();
 
 		// show image
+		cv::line(img, cv::Point(x1, 0), cv::Point(x1, img.rows), cv::Scalar(0, 0, 255), 3);
+		//cv::line(img, cv::Point(x2, 0), cv::Point(x2, img.rows-1), cv::Scalar(0, 0, 255), 3);
+		//cv::imwrite(img_str, img);
 		cv::resize(img, img, cv::Size(), 0.6, 0.6);
-		cv::imshow(output, img);
+		cv::imshow("img", img);
 		
 		if(key == 27) break;
 	}
 	*/
-	
+	int a = signbit(2-1);
+	int b = signbit(1-2);
+	std::cout << "正:" << a << std::endl;
+	std::cout << "負:" << b << std::endl;
 	return 0;
 }
 

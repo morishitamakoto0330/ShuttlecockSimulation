@@ -12,6 +12,20 @@
 #include "./debug.hpp"
 
 
+// global variable
+extern int point_number;
+extern int area_threshold;
+extern int x_threshold;
+extern bool isTrack;
+
+extern std::string img_white_name;
+extern std::vector<std::pair<int, int>> shuttle_trajectory;
+extern std::vector<int> shuttle_area_value;
+extern std::vector<std::vector<std::pair<int, int>>> prev_gravity_pos;
+extern std::vector<std::vector<int>> prev_area_value;
+//extern std::vector<std::vector<int>> prev_move_value;
+
+
 int main(int argc, char* argv[])
 {
 	// open file
@@ -25,10 +39,9 @@ int main(int argc, char* argv[])
 	}
 
 	// valiable
+	int x, y;
 	int index = 1;
 	int test_index = 1;
-	int x_lower = 670;
-	int x_upper = 1350;
 	
 	std::string input_win = "input";
 	std::string output_win = "output";
@@ -58,6 +71,7 @@ int main(int argc, char* argv[])
 	cap >> frame;
 	cvtColor(frame, im3, cv::COLOR_BGR2GRAY);
 
+
 	// init mask image
 	im_mask1 = im1.clone();
 	im_mask2 = im2.clone();
@@ -69,6 +83,23 @@ int main(int argc, char* argv[])
 
 		// finish processing if put ESC
 		if(key == 27) {
+			int n = shuttle_trajectory.size();
+			cv::Mat img_white = cv::imread(img_white_name);
+			for(int i = 0; i < n; i++) {
+				x = shuttle_trajectory[i].first;
+				y = shuttle_trajectory[i].second;
+				if(x == -1) break;
+				cv::circle(img_white, cv::Point(x,y), 4, cv::Scalar(0,0,255), 2);
+			}
+			cv::imwrite(img_white_name, img_white);
+			/*
+			std::cout << "detect num=" << n << std::endl;
+			
+			for(int i = 0; i < n; i++) {
+				std::cout << "(x,y)=(" << shuttle_trajectory[i].first << ",";
+				std::cout << shuttle_trajectory[i].second << ")" << std::endl;
+			}
+			*/
 			cv::destroyAllWindows();
 			break;
 		}
@@ -77,10 +108,11 @@ int main(int argc, char* argv[])
 		moveObjDetection(im1, im2, im3, &im_mask);
 
 		// remove noise by erode and dilate
-		erode_dilate(im_mask, &im_mask, 1);
+		//erode_dilate(im_mask, &im_mask, 1);
 
 		// label image
 		labeling(im_mask, &labeledImage);
+		
 
 		/*
 		// show input and output
@@ -91,6 +123,7 @@ int main(int argc, char* argv[])
 		cv::resize(labeledImage, labeledImage, cv::Size(), 0.6, 0.6);
 		cv::imshow(label_win, labeledImage);
 		*/
+		/*
 		im_mask_init = cv::Mat::zeros(cv::Size(im1.cols, im1.rows), CV_8UC1);
 		
 		cv::bitwise_or(im_mask1, im_mask_init, im_mask_init);
@@ -99,14 +132,13 @@ int main(int argc, char* argv[])
 		
 		cv::resize(im_mask_init, im_mask_init, cv::Size(), 0.5, 0.5);
 		cv::imshow("mask", im_mask_init);
-		/*
+		*/
 		cv::Mat a,b;
 
 		create_image(im_mask, &a, im_mask);
 		combine_image(a, labeledImage, &b);
 		cv::resize(b, b, cv::Size(), 0.33, 0.33);
 		cv::imshow("moving object <-     -> labeling", b);
-		*/
 
 		/*
 		// save capture

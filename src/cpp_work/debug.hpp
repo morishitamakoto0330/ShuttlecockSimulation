@@ -1,5 +1,9 @@
-void dispString(std::string str);
-void dispInt(int i);
+void disp_grav_pos(std::vector<std::pair<int, int>> v);
+void disp_area_value(std::vector<int> v);
+
 void dispPixelValue(cv::Mat frame, int x, int y);
-void writePoint(int x, int y);
+
+
+void writePoint(int x, int y, cv::Mat* img);
+
 
