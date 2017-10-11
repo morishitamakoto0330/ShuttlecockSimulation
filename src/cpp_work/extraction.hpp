@@ -2,14 +2,13 @@
 extern int point_number;
 extern int area_threshold;
 extern int x_threshold;
-extern bool isTrack;
 
 extern std::string img_white_name;
 extern std::vector<std::pair<int, int>> shuttle_trajectory;
 extern std::vector<int> shuttle_area_value;
 extern std::vector<std::vector<std::pair<int, int>>> prev_gravity_pos;
 extern std::vector<std::vector<int>> prev_area_value;
-//extern std::vector<std::vector<int>> prev_move_value;
+extern std::vector<int> track_index;
 
 
 

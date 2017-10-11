@@ -19,6 +19,12 @@ int main(void)
 	int x1 = 1090;
 	int x2 = 850;
 
+	std::vector<std::pair<int, int>> v;
+
+	for(int i = 0; i < 10000; i++) {
+		v.push_back(std::make_pair(0, 0));
+	}
+
 	/*
 	std::string img_str = "../../res/image_progressive/shuttle_point/shuttle_point.png";
 
@@ -47,10 +53,6 @@ int main(void)
 		if(key == 27) break;
 	}
 	*/
-	int a = signbit(2-1);
-	int b = signbit(1-2);
-	std::cout << "正:" << a << std::endl;
-	std::cout << "負:" << b << std::endl;
 	return 0;
 }
 

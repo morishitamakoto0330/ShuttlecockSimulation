@@ -16,14 +16,13 @@
 extern int point_number;
 extern int area_threshold;
 extern int x_threshold;
-extern bool isTrack;
 
 extern std::string img_white_name;
 extern std::vector<std::pair<int, int>> shuttle_trajectory;
 extern std::vector<int> shuttle_area_value;
 extern std::vector<std::vector<std::pair<int, int>>> prev_gravity_pos;
 extern std::vector<std::vector<int>> prev_area_value;
-//extern std::vector<std::vector<int>> prev_move_value;
+extern std::vector<int> track_index;
 
 
 int main(int argc, char* argv[])
@@ -84,22 +83,30 @@ int main(int argc, char* argv[])
 		// finish processing if put ESC
 		if(key == 27) {
 			int n = shuttle_trajectory.size();
+			int b, g, r;
+			b = 0;
+			g = 0;
+			r = 255;
+			int count = 0;
 			cv::Mat img_white = cv::imread(img_white_name);
+			cv::line(img_white, cv::Point(x_threshold, 0), cv::Point(x_threshold, img_white.rows), cv::Scalar(255,0,0), 2);
 			for(int i = 0; i < n; i++) {
 				x = shuttle_trajectory[i].first;
 				y = shuttle_trajectory[i].second;
-				if(x == -1) break;
-				cv::circle(img_white, cv::Point(x,y), 4, cv::Scalar(0,0,255), 2);
+				if(x == -1) {
+					b = rand()&255;
+					g = rand()&255;
+					r = rand()&255;
+					count++;
+					continue;
+				}
+				cv::circle(img_white, cv::Point(x,y), 4, cv::Scalar(b,g,r), 2);
 			}
 			cv::imwrite(img_white_name, img_white);
-			/*
-			std::cout << "detect num=" << n << std::endl;
 			
-			for(int i = 0; i < n; i++) {
-				std::cout << "(x,y)=(" << shuttle_trajectory[i].first << ",";
-				std::cout << shuttle_trajectory[i].second << ")" << std::endl;
-			}
-			*/
+			
+			std::cout << "detect num=" << count << std::endl;
+			
 			cv::destroyAllWindows();
 			break;
 		}
@@ -108,7 +115,7 @@ int main(int argc, char* argv[])
 		moveObjDetection(im1, im2, im3, &im_mask);
 
 		// remove noise by erode and dilate
-		//erode_dilate(im_mask, &im_mask, 1);
+		erode_dilate(im_mask, &im_mask, 1);
 
 		// label image
 		labeling(im_mask, &labeledImage);
