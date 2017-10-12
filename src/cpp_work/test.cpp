@@ -16,14 +16,15 @@ int main(void)
 {
 
 	int key;
-	int x1 = 1090;
-	int x2 = 850;
 
-	std::vector<std::pair<int, int>> v;
+	std::pair<int, int> p1 = std::make_pair(0, 0);
+	std::pair<int, int> p2 = std::make_pair(1, 0);
+	std::pair<int, int> p3 = std::make_pair(2, 1);
 
-	for(int i = 0; i < 10000; i++) {
-		v.push_back(std::make_pair(0, 0));
-	}
+	double output;
+	calc_angle(p1, p2, p3, &output);
+
+	std::cout << "output=" << output << std::endl;
 
 	/*
 	std::string img_str = "../../res/image_progressive/shuttle_point/shuttle_point.png";

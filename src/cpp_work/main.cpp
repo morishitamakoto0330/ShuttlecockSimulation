@@ -84,6 +84,7 @@ int main(int argc, char* argv[])
 		if(key == 27) {
 			int n = shuttle_trajectory.size();
 			int b, g, r;
+			double angle;
 			b = 0;
 			g = 0;
 			r = 255;
@@ -101,6 +102,13 @@ int main(int argc, char* argv[])
 					continue;
 				}
 				cv::circle(img_white, cv::Point(x,y), 4, cv::Scalar(b,g,r), 2);
+
+				if(((i+2) < n) && (x != -1) && (shuttle_trajectory[i+1].first != -1) && (shuttle_trajectory[i+2].first != -1)) {
+					calc_angle(shuttle_trajectory[i], shuttle_trajectory[i+1], shuttle_trajectory[i+2], &angle);
+					x = shuttle_trajectory[i+1].first;
+					y = shuttle_trajectory[i+1].second;
+					cv::putText(img_white, std::to_string((int)angle), cv::Point(x+5,y+5), 0, 0.5, cv::Scalar(0,255,0), 1);
+				}
 			}
 			cv::imwrite(img_white_name, img_white);
 			

@@ -41,4 +41,7 @@ void combine_image(cv::Mat im1, cv::Mat im2, cv::Mat* dst);
 
 void create_image(cv::Mat src, cv::Mat* dst, cv::Mat mask);
 
+void calc_angle(std::pair<int, int> p1, std::pair<int, int> p2, std::pair<int, int> p3, double* dst);
+
+
 

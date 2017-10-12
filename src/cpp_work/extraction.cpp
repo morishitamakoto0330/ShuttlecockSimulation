@@ -638,6 +638,20 @@ void create_image(cv::Mat src, cv::Mat* dst, cv::Mat mask)
 }
 
 
+/*
+ * calculate angle
+ */
+void calc_angle(std::pair<int, int> p1, std::pair<int, int> p2, std::pair<int, int> p3, double* dst)
+{
+	std::pair<int, int> a = std::make_pair(p2.first - p1.first, p2.second - p1.second);
+	std::pair<int, int> b = std::make_pair(p3.first - p2.first, p3.second - p2.second);
+
+	int inner_product = a.first * b.first + a.second * b.second;
+	double norm_a = sqrt(a.first * a.first + a.second * a.second);
+	double norm_b = sqrt(b.first * b.first + b.second * b.second);
+
+	*dst = acos(inner_product / (norm_a * norm_b)) / M_PI * 180;
+}
 
 
 
