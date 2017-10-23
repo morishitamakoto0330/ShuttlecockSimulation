@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 	}
 
 	// valiable
-	int x, y;
+	int x, y, area;
 	int index = 1;
 	int test_index = 1;
 	
@@ -91,14 +91,24 @@ int main(int argc, char* argv[])
 			int count = 0;
 			cv::Mat img_white = cv::imread(img_white_name);
 			cv::line(img_white, cv::Point(x_threshold, 0), cv::Point(x_threshold, img_white.rows), cv::Scalar(255,0,0), 2);
+			
+			std::cout << std::endl;
+			std::cout << "shuttle [No." << count+1 << "]------" << std::endl;
+			
 			for(int i = 0; i < n; i++) {
 				x = shuttle_trajectory[i].first;
 				y = shuttle_trajectory[i].second;
+				area = shuttle_area_value[i];
+				
+				std::cout << "(x,y)=(" << x << "," << y << "), area=" << area;
+				std::cout << std::endl;
+				
 				if(x == -1) {
 					b = rand()&255;
 					g = rand()&255;
 					r = rand()&255;
 					count++;
+					std::cout << "shuttle [No." << count+1 << "]------" << std::endl;
 					continue;
 				}
 				cv::circle(img_white, cv::Point(x,y), 4, cv::Scalar(b,g,r), 2);
@@ -107,13 +117,10 @@ int main(int argc, char* argv[])
 					calc_angle(shuttle_trajectory[i], shuttle_trajectory[i+1], shuttle_trajectory[i+2], &angle);
 					x = shuttle_trajectory[i+1].first;
 					y = shuttle_trajectory[i+1].second;
-					cv::putText(img_white, std::to_string((int)angle), cv::Point(x+5,y+5), 0, 0.5, cv::Scalar(0,255,0), 1);
+					cv::putText(img_white, std::to_string((int)angle), cv::Point(x+10, y+10), 0, 0.5, cv::Scalar(0,255,0), 2);
 				}
 			}
 			cv::imwrite(img_white_name, img_white);
-			
-			
-			std::cout << "detect num=" << count << std::endl;
 			
 			cv::destroyAllWindows();
 			break;

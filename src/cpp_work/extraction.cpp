@@ -308,6 +308,8 @@ void labeling(cv::Mat src, cv::Mat* dst)
 						y1 = y;
 						area1 = area;
 						shuttle_size = shuttle_trajectory.size();
+						
+						std::cout << "previous track" << std::endl;
 						std::cout << "(x1,y1)=(" << x1 << "," << y1 << "), area1=" << area1 << std::endl;
 						std::cout << "direction1=" << direction << std::endl;
 						
