@@ -120,7 +120,7 @@ int main(int argc, char* argv[])
 					cv::putText(img_white, std::to_string((int)angle), cv::Point(x+10, y+10), 0, 0.5, cv::Scalar(0,255,0), 2);
 				}
 			}
-			cv::imwrite(img_white_name, img_white);
+			//cv::imwrite(img_white_name, img_white);
 			
 			cv::destroyAllWindows();
 			break;

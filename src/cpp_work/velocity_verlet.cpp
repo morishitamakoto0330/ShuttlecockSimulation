@@ -13,7 +13,6 @@ int main(void)
 	int step, x_max, y_max, y_init;
 	double x, y, vx, vy, x_prev, y_prev, vx_prev, vy_prev;
 	double fx, fy;
-	double _x, _y, _vx, _vy, _fx, _fy, _x_prev, _y_prev;
 	double theta,  omega, torque, theta_prev, omega_prev, torque_prev;
 	double m, g, dt;
 	//double Fx, Fy;
@@ -30,7 +29,7 @@ int main(void)
 	m = 0.005;    // mass
 	g = 9.80665;  // gravity
 	dt = 0.01;    // delta time
-	l = 0.01;     // distance between center of gravity and working point of resistance force
+	l = 0.005;     // distance between center of gravity and working point of resistance force
 	I = 0.00005;  // inertia
 	y_init = 582; // initial y value
 
@@ -41,7 +40,7 @@ int main(void)
 
 	// simulate until the object gets out of (x,y) range
 	for(int i = 1; i <= 10; i++) {
-		GAMMMA = i*0.001;
+		//GAMMMA = i*0.001;
 		//C = i*0.1;
 		//D = C*area*density;
 		GAMMMA_ver = i*0.001;
@@ -67,15 +66,6 @@ int main(void)
 		vx_prev = vx;
 		vy_prev = vy;
 
-		_x = x;
-		_y = y;
-		_vx = vx;
-		_vy = vy;
-		_fx = fx;
-		_fy = fy;
-		_x_prev = _x;
-		_y_prev = _y;
-
 		theta_prev = theta;
 		omega_prev = omega;
 		torque = GAMMMA_hor*l*(vx*sin(theta) - vy*cos(theta));
@@ -92,8 +82,8 @@ int main(void)
 			// update vx(t), vy(t)---------------------------------------------------------
 			
 			// viscous resistance
-			_vx = (2*m - GAMMMA*dt)/(2*m + GAMMMA*dt)*_vx;
-			_vy = (2*m - GAMMMA*dt)/(2*m + GAMMMA*dt)*_vy - (2*m*g*dt/(2*m + GAMMMA*dt));
+			//vx = (2*m - GAMMMA*dt)/(2*m + GAMMMA*dt)*_vx;
+			//vy = (2*m - GAMMMA*dt)/(2*m + GAMMMA*dt)*_vy - (2*m*g*dt/(2*m + GAMMMA*dt));
 			
 			// inertial resistance
 			//vx = (sqrt(m*m + 2*m*D*dt*vx - (D*D*dt*dt*vx*vx)) - m)/(D*dt);
@@ -122,8 +112,8 @@ int main(void)
 			
 			// set f(t)--------------------------------------------------------------------
 			// viscous resistance
-			_fx = -1*GAMMMA*_vx;
-			_fy = -1*GAMMMA*_vy - m*g;
+			//fx = -1*GAMMMA*_vx;
+			//fy = -1*GAMMMA*_vy - m*g;
 			// resistance considering rotation
 			fx = G_diff*vy_prev*sin(theta_prev)*cos(theta_prev) - (GAMMMA_hor*sin(theta_prev)*sin(theta_prev) + GAMMMA_ver*cos(theta_prev)*cos(theta_prev))*vx_prev;
 			fy = G_diff*vx_prev*sin(theta_prev)*cos(theta_prev) - (GAMMMA_hor*cos(theta_prev)*cos(theta_prev) + GAMMMA_ver*sin(theta_prev)*sin(theta_prev))*vy_prev;
@@ -132,8 +122,8 @@ int main(void)
 			// update x(t), y(t) ([m] -> [pixel])---------------------------------------------
 			
 			// viscous resistance
-			_x = _x + ((dt - GAMMMA/(2*m)*dt*dt)*_vx)*1000/4.31;
-			_y = _y + ((dt - (GAMMMA + m*g)/(2*m)*dt*dt)*_vy)*1000/4.31;
+			//x = x + ((dt - GAMMMA/(2*m)*dt*dt)*_vx)*1000/4.31;
+			//y = y + ((dt - (GAMMMA + m*g)/(2*m)*dt*dt)*_vy)*1000/4.31;
 			
 			// inertial resistance
 			//x = x + ((1 - D*vx*dt/(2*m))*vx*dt)*1000/4.31;
@@ -148,11 +138,10 @@ int main(void)
 			std::cout << "(x,y)=(" << x << "," << y_init*2-y << ")";
 			std::cout << "(vx,vy)=(" << vx << "," << vy << ")" << std::endl;
 			std::cout << "(fx,fy)=(" << fx << "," << fy << ")" << std::endl;
-			std::cout << "(_fx,_fy)=(" << _fx << "," << _fy << ")" << std::endl;
-			std::cout << "θ=" << theta << ",ω=" << omega << ",T=" << torque << std::endl;
+			std::cout << "θ=" << theta/M_PI*180 << ",_θ=" << atan(vy/vx)/M_PI*180 << ",ω=" << omega << ",T=" << torque << std::endl;
 
+			// draw shuttle trajectory
 			cv::line(img, cv::Point(x_prev,y_init*2 - y_prev), cv::Point(x,y_init*2 - y), cv::Scalar(i*25,0,255));
-			//cv::line(img, cv::Point(_x_prev,y_init*2 - _y_prev), cv::Point(_x,y_init*2 - _y), cv::Scalar(0,i*25,255));
 
 			// next step
 			x_prev = x;
@@ -163,13 +152,11 @@ int main(void)
 			omega_prev = omega;
 			torque_prev = torque;
 
-			_x_prev = _x;
-			_y_prev = _y;
 		}
 	}
 
 	cv::circle(img, cv::Point(956,y_init), 4, cv::Scalar(255,0,0), 3);
-	cv::imwrite("../../res/image_simulate/shuttle_points/shuttle_point_10_24.png", img);
+	cv::imwrite("../../res/image_simulate/shuttle_points/shuttle_point_10_26.png", img);
 
 	return 0;
 }
