@@ -1,8 +1,8 @@
-#include "/usr/local/Cellar/opencv3/3.3.0_3/include/opencv2/core.hpp"
-#include "/usr/local/Cellar/opencv3/3.3.0_3/include/opencv2/highgui.hpp"
-#include "/usr/local/Cellar/opencv3/3.3.0_3/include/opencv2/imgproc.hpp"
-#include "/usr/local/Cellar/opencv3/3.3.0_3/include/opencv2/opencv.hpp"
-#include "/usr/local/Cellar/opencv3/3.3.0_3/include/opencv2/imgproc/types_c.h"
+#include "/usr/local/Cellar/opencv/3.3.1_1/include/opencv2/core.hpp"
+#include "/usr/local/Cellar/opencv/3.3.1_1/include/opencv2/highgui.hpp"
+#include "/usr/local/Cellar/opencv/3.3.1_1/include/opencv2/imgproc.hpp"
+#include "/usr/local/Cellar/opencv/3.3.1_1/include/opencv2/opencv.hpp"
+#include "/usr/local/Cellar/opencv/3.3.1_1/include/opencv2/imgproc/types_c.h"
 
 #include <iostream>
 #include <string>
