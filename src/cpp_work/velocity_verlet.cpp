@@ -9,6 +9,10 @@
 #include <string.h>
 #include <fstream>
 
+// data1
+//static const int X_INIT = 534;
+//static const int Y_INIT = 463;
+// data3
 static const int X_INIT = 956;
 static const int Y_INIT = 582;
 
@@ -17,6 +21,15 @@ void fix_xy(double* x, double* y, int* x_pixel, int* y_pixel);
 
 int main(void)
 {
+	// data1
+	//std::vector<int> v{534, 463, 666, 442, 754, 437, 831, 441, 901, 444, 967, 444, 1027, 446, 1083, 449, 1136, 453, 1183, 457, 1232, 461, 1274, 464, 1316, 468, 1355, 473, 1394, 479, 1431, 484, 1464, 490, 1497, 495, 1529, 501, 1559, 509, 1589, 516, 1618, 523};
+	// data2
+	//std::vector<int> v{568, 547, 710, 494, 796, 477, 875, 471, 949, 461, 1012, 451, 1071, 444, 1126, 438, 1177, 433, 1224, 429, 1269, 426, 1311, 423, 1351, 421, 1388, 419, 1423, 418, 1456, 417, 1488, 418, 1519, 418, 1547, 419, 1576, 421, 1601, 423};
+	// data3
+	std::vector<int> v{956, 582, 987, 556, 1017, 529, 1041, 505, 1066, 480, 1092, 456, 1114, 436, 1137, 418, 1160, 399, 1179, 385, 1200, 370, 1221, 356, 1239, 343, 1257, 331, 1274, 320, 1289, 311, 1305, 301, 1324, 292, 1336, 285, 1351, 277, 1366, 270, 1380, 264, 1395, 258, 1409, 254, 1426, 250, 1439, 247, 1452, 244, 1464, 241, 1476, 242, 1485, 240, 1502, 239, 1512, 239, 1523, 239, 1537, 242, 1546, 242, 1561, 243, 1569, 245, 1581, 249, 1591, 252, 1606, 258, 1617, 262, 1627, 268, 1637, 272, 1647, 278, 1658, 285, 1668, 290, 1678, 297, 1687, 304, 1694, 310, 1707, 321, 1717, 330, 1726, 339, 1735, 349, 1744, 359, 1753, 370, 1761, 380, 1770, 392, 1779, 403};
+	// data4
+	//std::vector<int> v{838, 601, 888, 595, 938, 594, 985, 591, 1029, 586, 1066, 582, 1109, 580, 1141, 579, 1177, 578, 1208, 578, 1240, 577, 1267, 577, 1298, 577, 1324, 577, 1349, 578, 1373, 580, 1396, 582, 1417, 583, 1440, 586, 1460, 590, 1485, 593, 1502, 596, 1519, 597};
+	
 	int step, x_max, y_max;
 	int x1, y1, x2, y2;
 	double x, y, vx, vy, x_prev, y_prev, vx_prev, vy_prev;
@@ -24,10 +37,12 @@ int main(void)
 	double theta,  omega, torque, theta_prev, omega_prev, torque_prev;
 	double m, g, dt;
 	double GAMMMA, C, D, density, area;
-	double GAMMMA_ver, GAMMMA_hor, l, I, G_diff;
+	double GAMMMA_ver, GAMMMA_hor, l, I, G_diff, GAMMMA_ratio;
 	double c1, c2, c3, c4, constant_A, constant_B, constant_C, constant_D;
+	double sum_error;
 
 	// output image
+	//cv::Mat img = cv::imread("../../res/image_simulate/shuttle_trajectory/shuttle_point_1.png");
 	cv::Mat img = cv::imread("../../res/image_simulate/shuttle_trajectory/shuttle_point_3.png");
 
 	/*
@@ -38,33 +53,39 @@ int main(void)
 	writing_file.open(file_name, std::ios::out);
 	*/
 
-	// initialize
+	// set parameter
+	sum_error = 0;
 	x_max = img.cols;
 	y_max = img.rows;
 	m = 0.005;    // mass
 	g = 9.80665;  // gravity
-	dt = 0.01;    // delta time
+	//dt = 0.01;    // delta time
+	dt = 1.0/60;
 	l = 0.005;     // distance between center of gravity and working point of resistance force
-	I = 0.00005;  // inertia
+	I = 0.00001;  // inertia
 	
-	GAMMMA_ver = 0.007;
-	GAMMMA_hor = 0.007;
-	G_diff = GAMMMA_ver - GAMMMA_hor;
-
 	//density = 1.293;
 	//area = M_PI*0.0365*0.0365;
 
+	// draw net line
 	cv::line(img, cv::Point(1090,0), cv::Point(1090,img.rows), cv::Scalar(255,0,0), 2);
 
+	// set ratio considering air anisotropy
+	GAMMMA_ratio = 1.5;
+
+
 	// simulate until the object gets out of (x,y) range
-	for(int i = 1; i <= 10; i++) {
+	for(int i = 1; i <= 1; i++) {
 		// initialize parameter
 
 		//GAMMMA = i*0.001;
 		//C = i*0.1;
 		//D = C*area*density;
-		GAMMMA_ver = i*0.002;
-		GAMMMA_hor = i*0.001;
+		//GAMMMA_hor = i*0.001;
+		//GAMMMA_ver = i*0.001;
+		GAMMMA_ver = 0.0057;
+		//GAMMMA_ver = GAMMMA_hor*GAMMMA_ratio;
+		GAMMMA_hor = GAMMMA_ver*GAMMMA_ratio;
 		G_diff = GAMMMA_ver - GAMMMA_hor;
 		
 		
@@ -77,7 +98,10 @@ int main(void)
 		x2 = 0;
 		y2 = 0;
 
-		// n=7
+		// data1 (n=2)
+		//vx = 132*60*4.31/1000;
+		//vy = 21*60*4.31/1000;
+		// data3 (n=7)
 		vx = 7.63772;
 		vy = 7.15113;
 		
@@ -94,12 +118,13 @@ int main(void)
 
 		theta_prev = theta;
 		omega_prev = omega;
-		torque = GAMMMA_ver*l*(vx*sin(theta) - vy*cos(theta));
+		torque = (-1)*GAMMMA_ver*l*(vx*sin(theta) - vy*cos(theta));
 		torque_prev = torque;
 
 		while((0 <= x2) && (x2 < x_max) && (0 <= y2) && (y2 < y_max)) {
 			
 			step++;
+			if(step*2 > v.size()) break;
 			
 			// update theta(t)--------------------------------------------------------------
 			theta = theta_prev + omega_prev*dt + torque_prev*dt*dt/(2*I);
@@ -144,7 +169,7 @@ int main(void)
 			vy = c3*vy_prev + c4*(vx_prev*sin(theta_prev)*cos(theta_prev) + vx*sin(theta)*cos(theta)) - g*dt;
 			
 			// update torque(t)--------------------------------------------------------------
-			torque = GAMMMA_ver*l*(vx*sin(theta) - vy*cos(theta));
+			torque = (-1)*GAMMMA_ver*l*(vx*sin(theta) - vy*cos(theta));
 			
 			
 			// update omega(t)---------------------------------------------------------------
@@ -192,7 +217,13 @@ int main(void)
 			//writing_file << step << " " << theta/M_PI*180 << " " << atan(vy/vx)/M_PI*180 << std::endl;
 
 			// draw shuttle trajectory
-			cv::line(img, cv::Point(x1,y1), cv::Point(x2,y2), cv::Scalar(i*25,0,255));
+			// evaluate error
+			//cv::line(img, cv::Point(x1,y1), cv::Point(x2,y2), cv::Scalar(i*25,0,255));
+			int _x = v[step*2];
+			int _y = v[step*2+1];
+			sum_error += sqrt(pow(x1-_x, 2) + pow(y1-_y, 2));
+			cv::circle(img, cv::Point(x1, y1), 4, cv::Scalar(255,0,0), 2);
+			cv::circle(img, cv::Point(_x, _y), 4, cv::Scalar(0,0,255), 2);
 
 			// next step
 			x_prev = x;
@@ -206,8 +237,11 @@ int main(void)
 		}
 	}
 
-	cv::circle(img, cv::Point(X_INIT,Y_INIT), 4, cv::Scalar(255,0,0), 3);
-	cv::imwrite("../../res/image_simulate/shuttle_points/shuttle_point_11_06_4.png", img);
+	sum_error = sum_error*4.31/1000;
+	std::cout << "error:" << sum_error << std::endl;
+	
+	cv::circle(img, cv::Point(X_INIT,Y_INIT), 4, cv::Scalar(0,0,0), 3);
+	cv::imwrite("../../res/image_simulate/shuttle_points/shuttle_point_11_09.png", img);
 
 	return 0;
 }
