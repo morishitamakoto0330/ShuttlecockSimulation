@@ -24,24 +24,49 @@ class Matrix
 		Vec matrix;
 	public:
 		Matrix(int row, int column);
+		void zeroMatrix(int row, int column);
 		void zeroMatrix(int row, int column, Vec *v);
+		void unitMatrix(int row, int column);
 		void setMatrix(Vec v);
-		void getMatrix(Vec *v);
+		Vec getMatrix();
+		double getElement(int row, int column);
 		void emptyMatrix();
+		void randomCreateMatrix();
+		
+		void addMatrix(Vec v);
+		void subtractMatrix(Vec v);
 		void productMatrix(Vec v);
-		void productMatrix(int num);
+		void productMatrix(double num);
+		
 		void rotateMatrix(double theta);
+		
 		void disp();
 		void disp(Vec v);
+		
 		void LU_decomposition(Vec *l, Vec *u);
-		void randomCreateMatrix();
 		void determinantTri(Vec v, double *d);
+		
+		void invertMatrix();
 		void invertMatrix(Vec l, Vec u, Vec *v);
 };
 
 Matrix::Matrix(int row, int column)
 {
 	Matrix::zeroMatrix(row, column, &matrix);
+}
+
+void Matrix::zeroMatrix(int row, int column)
+{
+	std::vector<double> _v;
+	Vec().swap(matrix);
+	
+	for(int i = 0; i < row; i++) {
+		for(int j = 0; j < column; j++) {
+			_v.push_back(0.0);
+		}
+		matrix.push_back(_v);
+		_v.clear();
+	}
 }
 
 void Matrix::zeroMatrix(int row, int column, Vec *v)
@@ -55,6 +80,20 @@ void Matrix::zeroMatrix(int row, int column, Vec *v)
 		}
 		(*v).push_back(_v);
 		_v.clear();
+	}
+}
+
+void Matrix::unitMatrix(int row, int column)
+{
+	if(row != column) {
+		std::cout << "(row != column) can't make unit matrix..." << std::endl;
+		exit(1);
+	}
+	
+	Matrix::zeroMatrix(row, column, &matrix);
+	
+	for(int i = 0; i < row; i++) {
+		matrix[i][i] = 1.0;
 	}
 }
 
@@ -72,9 +111,14 @@ void Matrix::setMatrix(Vec v)
 	}
 }
 
-void Matrix::getMatrix(Vec *v)
+Vec Matrix::getMatrix()
 {
-	*v = matrix;
+	return matrix;
+}
+
+double Matrix::getElement(int row, int column)
+{
+	return matrix[row][column];
 }
 
 void Matrix::productMatrix(Vec v)
@@ -104,10 +148,11 @@ void Matrix::productMatrix(Vec v)
 	// substitute answer for matrix
 	Matrix::emptyMatrix();
 	Matrix::zeroMatrix(v_row, v_column, &matrix);
-	Matrix::setMatrix(answer);
+
+	matrix = answer;
 }
 
-void Matrix::productMatrix(int num)
+void Matrix::productMatrix(double num)
 {
 	for(int i = 0; i < matrix.size(); i++) {
 		for(int j = 0; j < matrix[i].size(); j++) {
@@ -116,9 +161,31 @@ void Matrix::productMatrix(int num)
 	}
 }
 
+void Matrix::addMatrix(Vec v)
+{
+	for(int i = 0; i < v.size(); i++) {
+		for(int j = 0; j < v[i].size(); j++) {
+			matrix[i][j] += v[i][j];
+		}
+	}
+}
+
+void Matrix::subtractMatrix(Vec v)
+{
+	for(int i = 0; i < v.size(); i++) {
+		for(int j = 0; j < v[i].size(); j++) {
+			matrix[i][j] -= v[i][j];
+		}
+	}
+}
+
 void Matrix::rotateMatrix(double theta)
 {
-	Matrix::productMatrix({{sin(theta), -1*cos(theta)}, {cos(theta), sin(theta)}});
+	Matrix m(2, 2);
+	m.setMatrix(matrix);
+	m.productMatrix({{cos(theta), -1*sin(theta)}, {sin(theta), cos(theta)}});
+	
+	matrix = m.getMatrix();
 }
 
 void Matrix::emptyMatrix()
@@ -174,9 +241,6 @@ void Matrix::LU_decomposition(Vec *l, Vec *u)
 	if(row != column) {
 		std::cout << "LU decomposition failed..." << std::endl;
 		exit(1);
-	} else {
-		std::cout << "LU decomposition" << std::endl;
-		std::cout << "A = L*U" << std::endl;
 	}
 	
 	// set L and U matrix
@@ -208,12 +272,14 @@ void Matrix::LU_decomposition(Vec *l, Vec *u)
 			}
 		}
 	}
+	/*
 	std::cout << "A=" << std::endl;
 	Matrix::disp(matrix);
 	std::cout << "L=" << std::endl;
 	Matrix::disp(*l);
 	std::cout << "U=" << std::endl;
 	Matrix::disp(*u);
+	*/
 }
 
 void Matrix::randomCreateMatrix()
@@ -237,6 +303,16 @@ void Matrix::determinantTri(Vec v, double *d)
 	for(int i = 0; i < v.size(); i++) {
 		(*d) *= v[i][i];
 	}
+}
+
+void Matrix::invertMatrix()
+{
+	Vec l_mat, u_mat;
+	Matrix m(matrix.size(), matrix[0].size());
+	m.setMatrix(matrix);
+	m.LU_decomposition(&l_mat, &u_mat);
+	
+	Matrix::invertMatrix(l_mat, u_mat, &matrix);
 }
 
 void Matrix::invertMatrix(Vec l, Vec u, Vec *x)
@@ -284,9 +360,9 @@ void Matrix::invertMatrix(Vec l, Vec u, Vec *x)
 	}
 }
 
+/*
 int main(void)
 {
-	/*
 	Vec l, u, m;
 	double l_det, u_det;
 	
@@ -297,9 +373,9 @@ int main(void)
 	matrix.invertMatrix(l, u, &m);
 	matrix.productMatrix(m);
 	matrix.disp();
-	*/
+
 	return 0;
 }
-
+*/
 
 

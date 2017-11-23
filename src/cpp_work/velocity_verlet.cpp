@@ -9,24 +9,27 @@
 #include <string.h>
 #include <fstream>
 
+#include "./matrix.hpp"
+
 // data1
-static const int X_INIT = 534;
-static const int Y_INIT = 463;
+//static const int X_INIT = 534;
+//static const int Y_INIT = 463;
 // data3
-//static const int X_INIT = 956;
-//static const int Y_INIT = 582;
+static const int X_INIT = 956;
+static const int Y_INIT = 582;
 
 
 void fix_xy(double* x, double* y, int* x_pixel, int* y_pixel);
+void calc_T(double theta, Matrix GAMMMA_matrix, Matrix* m);
 
 int main(void)
 {
 	// data1
-	std::vector<int> v{534, 463, 666, 442, 754, 437, 831, 441, 901, 444, 967, 444, 1027, 446, 1083, 449, 1136, 453, 1183, 457, 1232, 461, 1274, 464, 1316, 468, 1355, 473, 1394, 479, 1431, 484, 1464, 490, 1497, 495, 1529, 501, 1559, 509, 1589, 516, 1618, 523};
+	//std::vector<int> v{534, 463, 666, 442, 754, 437, 831, 441, 901, 444, 967, 444, 1027, 446, 1083, 449, 1136, 453, 1183, 457, 1232, 461, 1274, 464, 1316, 468, 1355, 473, 1394, 479, 1431, 484, 1464, 490, 1497, 495, 1529, 501, 1559, 509, 1589, 516, 1618, 523};
 	// data2
 	//std::vector<int> v{568, 547, 710, 494, 796, 477, 875, 471, 949, 461, 1012, 451, 1071, 444, 1126, 438, 1177, 433, 1224, 429, 1269, 426, 1311, 423, 1351, 421, 1388, 419, 1423, 418, 1456, 417, 1488, 418, 1519, 418, 1547, 419, 1576, 421, 1601, 423};
 	// data3
-	//std::vector<int> v{956, 582, 987, 556, 1017, 529, 1041, 505, 1066, 480, 1092, 456, 1114, 436, 1137, 418, 1160, 399, 1179, 385, 1200, 370, 1221, 356, 1239, 343, 1257, 331, 1274, 320, 1289, 311, 1305, 301, 1324, 292, 1336, 285, 1351, 277, 1366, 270, 1380, 264, 1395, 258, 1409, 254, 1426, 250, 1439, 247, 1452, 244, 1464, 241, 1476, 242, 1485, 240, 1502, 239, 1512, 239, 1523, 239, 1537, 242, 1546, 242, 1561, 243, 1569, 245, 1581, 249, 1591, 252, 1606, 258, 1617, 262, 1627, 268, 1637, 272, 1647, 278, 1658, 285, 1668, 290, 1678, 297, 1687, 304, 1694, 310, 1707, 321, 1717, 330, 1726, 339, 1735, 349, 1744, 359, 1753, 370, 1761, 380, 1770, 392, 1779, 403};
+	std::vector<int> v{956, 582, 987, 556, 1017, 529, 1041, 505, 1066, 480, 1092, 456, 1114, 436, 1137, 418, 1160, 399, 1179, 385, 1200, 370, 1221, 356, 1239, 343, 1257, 331, 1274, 320, 1289, 311, 1305, 301, 1324, 292, 1336, 285, 1351, 277, 1366, 270, 1380, 264, 1395, 258, 1409, 254, 1426, 250, 1439, 247, 1452, 244, 1464, 241, 1476, 242, 1485, 240, 1502, 239, 1512, 239, 1523, 239, 1537, 242, 1546, 242, 1561, 243, 1569, 245, 1581, 249, 1591, 252, 1606, 258, 1617, 262, 1627, 268, 1637, 272, 1647, 278, 1658, 285, 1668, 290, 1678, 297, 1687, 304, 1694, 310, 1707, 321, 1717, 330, 1726, 339, 1735, 349, 1744, 359, 1753, 370, 1761, 380, 1770, 392, 1779, 403};
 	// data4
 	//std::vector<int> v{838, 601, 888, 595, 938, 594, 985, 591, 1029, 586, 1066, 582, 1109, 580, 1141, 579, 1177, 578, 1208, 578, 1240, 577, 1267, 577, 1298, 577, 1324, 577, 1349, 578, 1373, 580, 1396, 582, 1417, 583, 1440, 586, 1460, 590, 1485, 593, 1502, 596, 1519, 597};
 	
@@ -43,8 +46,16 @@ int main(void)
 	double c1, c2, c3, c4, constant_A, constant_B, constant_C, constant_D;
 	double sum_error, optimal_ratio, min_error;
 
+	Matrix v_matrix(2, 1);
+	Matrix g_matrix(2, 1);
+	Matrix E_matrix(2, 2);
+	Matrix T_matrix(2, 2);
+	Matrix tmp_matrix(2, 2);
+	Matrix f_matrix(2, 2);
+	Matrix GAMMMA_matrix(2, 2);
+
 	// output image
-	cv::Mat img = cv::imread("../../res/image_simulate/shuttle_trajectory/shuttle_point_1.png");
+	cv::Mat img = cv::imread("../../res/image_simulate/shuttle_trajectory/shuttle_point_3.png");
 	//cv::Mat img = cv::imread("../../res/image_simulate/shuttle_trajectory/shuttle_point_3.png");
 
 	/*
@@ -60,8 +71,7 @@ int main(void)
 	y_max = img.rows;
 	m = 0.005;    // mass
 	g = 9.80665;  // gravity
-	//dt = 0.01;    // delta time
-	dt = 1.0/60;
+	dt = 1.0/60;  // delta time
 	l = 0.005;     // distance between center of gravity and working point of resistance force
 	I = 0.00001;  // inertia
 	
@@ -72,8 +82,9 @@ int main(void)
 	cv::line(img, cv::Point(1090,0), cv::Point(1090,img.rows), cv::Scalar(255,0,0), 2);
 
 	// set ratio considering air anisotropy
-	GAMMMA_ratio = 1.40;
-	optimal_ratio = GAMMMA_ratio;
+	//GAMMMA_ratio = 1.40;
+	GAMMMA_ratio = 1.0;
+	//optimal_ratio = GAMMMA_ratio;
 	min_error = 0.0;
 	
 
@@ -81,18 +92,20 @@ int main(void)
 	// simulate until the object gets out of (x,y) range
 	for(int i = 1; i <= 10; i++) {
 		// initialize parameter
-		GAMMMA_ratio += 0.01;
+		//GAMMMA_ratio += 0.01;
 
 		//GAMMMA = i*0.001;
 		//C = i*0.1;
 		//D = C*area*density;
-		//GAMMMA_hor = i*0.001;
+		GAMMMA_hor = i*0.001;
 		//GAMMMA_ver = i*0.001;
-		GAMMMA_ver = 0.0057;
-		//GAMMMA_ver = GAMMMA_hor*GAMMMA_ratio;
-		GAMMMA_hor = GAMMMA_ver*GAMMMA_ratio;
+		//GAMMMA_ver = 0.0057;
+		GAMMMA_ver = GAMMMA_hor*GAMMMA_ratio;
+		//GAMMMA_hor = GAMMMA_ver*GAMMMA_ratio;
 		G_diff = GAMMMA_ver - GAMMMA_hor;
 		
+		GAMMMA_matrix.setMatrix({{-1*GAMMMA_ver, 0}, {0, -1*GAMMMA_hor}});
+		g_matrix.setMatrix({{0.0},{-1*dt*g}});
 		
 		step = 0;
 		sum_error = 0.0;
@@ -105,11 +118,11 @@ int main(void)
 		y2 = 0;
 
 		// data1 (n=2)
-		vx = 132*60*4.31/1000;
-		vy = 21*60*4.31/1000;
+		//vx = 132*60*4.31/1000;
+		//vy = 21*60*4.31/1000;
 		// data3 (n=7)
-		//vx = 7.63772;
-		//vy = 7.15113;
+		vx = 7.63772;
+		vy = 7.15113;
 		
 		fx = 0.0;
 		fy = 0.0;
@@ -122,12 +135,19 @@ int main(void)
 		vx_prev = vx;
 		vy_prev = vy;
 
+		v_matrix.setMatrix({{vx}, {vy}});
+		
 		theta_prev = theta;
 		omega_prev = omega;
 		torque = (-1)*GAMMMA_ver*l*(vx*sin(theta) - vy*cos(theta));
 		torque_prev = torque;
 
 		while((0 <= x2) && (x2 < x_max) && (0 <= y2) && (y2 < y_max)) {
+			
+			// set Matrix
+			f_matrix.unitMatrix(2, 2);
+			E_matrix.unitMatrix(2, 2);
+			T_matrix.unitMatrix(2, 2);
 			
 			step++;
 			if(step*2 >= v.size()) break;
@@ -160,6 +180,7 @@ int main(void)
 			vy = (2*m - dt*(GAMMMA_hor*cos(theta_prev)*cos(theta_prev) + GAMMMA_ver*sin(theta_prev)*sin(theta_prev)))/constant_A*vy_prev + dt*G_diff*(vx_prev*sin(theta_prev)*cos(theta_prev) + vx*sin(theta)*cos(theta))/constant_A - 2*m*g*dt/constant_A;
 			
 			*/
+			/*
 			c1 = (2*m - dt*(GAMMMA_ver*sin(theta_prev)*sin(theta_prev) + GAMMMA_hor*cos(theta_prev)*cos(theta_prev)))/(2*m + dt*(GAMMMA_ver*sin(theta)*sin(theta) + GAMMMA_hor*cos(theta)*cos(theta)));
 			c2 = dt*G_diff/(2*m + dt*(GAMMMA_ver*sin(theta)*sin(theta) + GAMMMA_hor*cos(theta)*cos(theta)));
 			
@@ -173,7 +194,40 @@ int main(void)
 			
 			vx = (constant_B*vx_prev + constant_C*vy_prev + D)/constant_A;
 			vy = c3*vy_prev + c4*(vx_prev*sin(theta_prev)*cos(theta_prev) + vx*sin(theta)*cos(theta)) - g*dt;
+			*/
+
+			// matrix calc
+			// V(t+dt) = V(t) + (dt/(2*m))*{T*V(t) + T*V(t+dt) + 2*G}
+			// *** T' = (dt/(2*m))*T ***
+			// (E - T')*V(t+dt) = (E + T')*V(t) + (dt/m)*G
+			// V(t+dt) = right_side * (E - T')^(-1)
+			// set T'
+			calc_T(theta, GAMMMA_matrix, &T_matrix);
+			T_matrix.productMatrix(dt/(2*m));
+
+			// prepare another T'
+			tmp_matrix.setMatrix(T_matrix.getMatrix());
+
+			// calc (E + T') and (E - T')
+			T_matrix.addMatrix(E_matrix.getMatrix());
+			E_matrix.subtractMatrix(tmp_matrix.getMatrix());
 			
+			// calc right side
+			T_matrix.productMatrix(v_matrix.getMatrix());
+			T_matrix.addMatrix(g_matrix.getMatrix());
+			
+			// calc (E - T')^(-1)
+			E_matrix.invertMatrix();
+			
+			// calc matrix V(t+dt)
+			E_matrix.productMatrix(T_matrix.getMatrix());
+			v_matrix.setMatrix(E_matrix.getMatrix());
+
+			// substitute vx, vy
+			vx = v_matrix.getElement(0, 0);
+			vy = v_matrix.getElement(1, 0);
+
+
 			// update torque(t)--------------------------------------------------------------
 			torque = (-1)*GAMMMA_ver*l*(vx*sin(theta) - vy*cos(theta));
 			
@@ -187,8 +241,14 @@ int main(void)
 			//fx = -1*GAMMMA*_vx;
 			//fy = -1*GAMMMA*_vy - m*g;
 			// resistance considering rotation
-			fx = G_diff*vy_prev*sin(theta_prev)*cos(theta_prev) - (GAMMMA_ver*sin(theta_prev)*sin(theta_prev) + GAMMMA_hor*cos(theta_prev)*cos(theta_prev))*vx_prev;
-			fy = G_diff*vx_prev*sin(theta_prev)*cos(theta_prev) - (GAMMMA_ver*cos(theta_prev)*cos(theta_prev) + GAMMMA_hor*sin(theta_prev)*sin(theta_prev))*vy_prev - m*g;
+			//fx = G_diff*vy_prev*sin(theta_prev)*cos(theta_prev) - (GAMMMA_ver*sin(theta_prev)*sin(theta_prev) + GAMMMA_hor*cos(theta_prev)*cos(theta_prev))*vx_prev;
+			//fy = G_diff*vx_prev*sin(theta_prev)*cos(theta_prev) - (GAMMMA_ver*cos(theta_prev)*cos(theta_prev) + GAMMMA_hor*sin(theta_prev)*sin(theta_prev))*vy_prev - m*g;
+			
+			// matrix calc
+			calc_T(theta_prev, GAMMMA_matrix, &f_matrix);
+			f_matrix.productMatrix({{vx_prev}, {vy_prev}});
+			fx = f_matrix.getElement(0, 0);
+			fy = f_matrix.getElement(1, 0);
 			
 			// update x(t), y(t) ([m] -> [pixel])---------------------------------------------
 			
@@ -249,18 +309,18 @@ int main(void)
 		if(min_error == 0.0) min_error = sum_error;
 		if(min_error > sum_error) {
 			min_error = sum_error;
-			optimal_ratio = GAMMMA_ratio;
+			//optimal_ratio = GAMMMA_ratio;
 		}
 		std::cout << "distance error:" << sum_error << std::endl;
 	}
 	
-	std::cout << "optimal_ratio:" << optimal_ratio << std::endl;
+	//std::cout << "optimal_ratio:" << optimal_ratio << std::endl;
 
 	for(int i = 0; i < error.size(); i++) {
 		std::cout << i << ":" << error[i] << std::endl;
 	}
 	cv::circle(img, cv::Point(X_INIT,Y_INIT), 4, cv::Scalar(0,0,0), 3);
-	cv::imwrite("../../res/image_simulate/1114/shuttle_point_11_16.png", img);
+	cv::imwrite("../../res/image_simulate/1122/shuttle_point_11_23_4.png", img);
 
 	return 0;
 }
@@ -275,7 +335,12 @@ void fix_xy(double* x, double* y, int* x_pixel, int* y_pixel)
 	*y_pixel = Y_INIT*2 - (*y_pixel);
 }
 
-
+void calc_T(double theta, Matrix GAMMMA_matrix, Matrix* m)
+{
+	(*m).rotateMatrix(-1*(M_PI/2 - theta));
+	(*m).productMatrix(GAMMMA_matrix.getMatrix());
+	(*m).rotateMatrix(M_PI/2 - theta);
+}
 
 
 
