@@ -1,8 +1,4 @@
-#include "/usr/local/Cellar/opencv/3.3.1_1/include/opencv2/core.hpp"
-#include "/usr/local/Cellar/opencv/3.3.1_1/include/opencv2/highgui.hpp"
-#include "/usr/local/Cellar/opencv/3.3.1_1/include/opencv2/imgproc.hpp"
 #include "/usr/local/Cellar/opencv/3.3.1_1/include/opencv2/opencv.hpp"
-#include "/usr/local/Cellar/opencv/3.3.1_1/include/opencv2/imgproc/types_c.h"
 
 #include <iostream>
 #include <string>
@@ -13,7 +9,6 @@
 
 
 // global variable
-extern int point_number;
 extern int area_threshold;
 extern int x_threshold;
 
@@ -28,8 +23,7 @@ extern std::vector<int> track_index;
 int main(int argc, char* argv[])
 {
 	// open file
-	//cv::VideoCapture cap("../../res/movie/interlace_1.MTS");
-	cv::VideoCapture cap("../../res/movie/progressive_1.MTS");
+	cv::VideoCapture cap("../../res/movie/progressive_1.mp4");
 	
 	// check file open
 	if(!cap.isOpened()) {
@@ -62,7 +56,7 @@ int main(int argc, char* argv[])
 	cv::namedWindow(output_win);
 	cv::namedWindow(label_win);
 
-	// get 3 flame
+	// get initial 3 flames
 	cap >> frame;
 	cvtColor(frame, im1, cv::COLOR_BGR2GRAY);
 	cap >> frame;
@@ -113,6 +107,7 @@ int main(int argc, char* argv[])
 				}
 				cv::circle(img_white, cv::Point(x,y), 4, cv::Scalar(b,g,r), 2);
 
+				// calc angle 
 				if(((i+2) < n) && (x != -1) && (shuttle_trajectory[i+1].first != -1) && (shuttle_trajectory[i+2].first != -1)) {
 					calc_angle(shuttle_trajectory[i], shuttle_trajectory[i+1], shuttle_trajectory[i+2], &angle);
 					x = shuttle_trajectory[i+1].first;
@@ -120,7 +115,7 @@ int main(int argc, char* argv[])
 					cv::putText(img_white, std::to_string((int)angle), cv::Point(x+10, y+10), 0, 0.5, cv::Scalar(0,255,0), 2);
 				}
 			}
-			//cv::imwrite(img_white_name, img_white);
+			cv::imwrite("../../res/image_hoge/hoge1211.png", img_white);
 			
 			cv::destroyAllWindows();
 			break;
@@ -136,25 +131,6 @@ int main(int argc, char* argv[])
 		labeling(im_mask, &labeledImage);
 		
 
-		/*
-		// show input and output
-		cv::resize(frame, frame, cv::Size(), 0.6, 0.6);
-		cv::imshow(input_win, frame);
-		cv::resize(im_mask, im_mask, cv::Size(), 0.6, 0.6);
-		cv::imshow(output_win, im_mask);
-		cv::resize(labeledImage, labeledImage, cv::Size(), 0.6, 0.6);
-		cv::imshow(label_win, labeledImage);
-		*/
-		/*
-		im_mask_init = cv::Mat::zeros(cv::Size(im1.cols, im1.rows), CV_8UC1);
-		
-		cv::bitwise_or(im_mask1, im_mask_init, im_mask_init);
-		cv::bitwise_or(im_mask2, im_mask_init, im_mask_init);
-		cv::bitwise_or(im_mask3, im_mask_init, im_mask_init);
-		
-		cv::resize(im_mask_init, im_mask_init, cv::Size(), 0.5, 0.5);
-		cv::imshow("mask", im_mask_init);
-		*/
 		cv::Mat a,b;
 
 		create_image(im_mask, &a, im_mask);

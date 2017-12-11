@@ -1,0 +1,7 @@
+  UID   PID  PPID CPU PRI NI      VSZ    RSS WCHAN  STAT   TT       TIME COMMAND
+  501 54884 54882   0  31  0  4296240   1096 -      S    s000    0:00.74 -bash
+  501 69719 54884   0  31  0  4271588    400 -      R+   s000    0:00.01 ./velocity_verlet
+  
+  UID   PID  PPID CPU PRI NI      VSZ    RSS WCHAN  STAT   TT       TIME COMMAND
+  501 80032 80031   0  31  0  4296240   1356 -      S    s000    0:00.26 -bash
+  501 84186 80032   0  31  0  4260376    308 -      R    s000    0:00.00 ./velocity_verlet

@@ -107,7 +107,7 @@ void Matrix::setMatrix(Vec v)
 			}
 		}
 	} else {
-		std::cout << "matrix size error" << std::endl;
+		std::cout << "setMatrix(Vec v): matrix size error" << std::endl;
 	}
 }
 
@@ -272,14 +272,6 @@ void Matrix::LU_decomposition(Vec *l, Vec *u)
 			}
 		}
 	}
-	/*
-	std::cout << "A=" << std::endl;
-	Matrix::disp(matrix);
-	std::cout << "L=" << std::endl;
-	Matrix::disp(*l);
-	std::cout << "U=" << std::endl;
-	Matrix::disp(*u);
-	*/
 }
 
 void Matrix::randomCreateMatrix()
@@ -363,17 +355,6 @@ void Matrix::invertMatrix(Vec l, Vec u, Vec *x)
 /*
 int main(void)
 {
-	Vec l, u, m;
-	double l_det, u_det;
-	
-	Matrix matrix(2, 2);
-	matrix.randomCreateMatrix();
-	matrix.LU_decomposition(&l, &u);
-	
-	matrix.invertMatrix(l, u, &m);
-	matrix.productMatrix(m);
-	matrix.disp();
-
 	return 0;
 }
 */

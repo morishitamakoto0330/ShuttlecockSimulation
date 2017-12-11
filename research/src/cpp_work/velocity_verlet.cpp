@@ -8,6 +8,8 @@
 #include <math.h>
 #include <string.h>
 #include <fstream>
+//#include <sys/time.h>
+//#include <sys/resource.h>
 
 #include "./matrix.hpp"
 
@@ -18,9 +20,22 @@
 static const int X_INIT = 956;
 static const int Y_INIT = 582;
 
+const double m = 0.005;      // mass
+const double g = 9.80665;    // gravity
+const double dt = 1.0/600;   // delta time
+// distance between center of gravity and working point of resistance force
+const double l = 0.005;
+const double I = 0.00001;    // inertia
+// set ratio considering air anisotropy
+const double GAMMMA_ratio = 1.0;
+const double _GAMMMA_ratio = 1.0;
 
 void fix_xy(double* x, double* y, int* x_pixel, int* y_pixel);
 void calc_T(double theta, Matrix GAMMMA_matrix, Matrix* m);
+void update_velocity(Matrix* velocity, Matrix gravity, Matrix gammma);
+void calc_equation(double* v, double gammma, double gravity, double sign);
+
+
 
 int main(void)
 {
@@ -34,16 +49,13 @@ int main(void)
 	//std::vector<int> v{838, 601, 888, 595, 938, 594, 985, 591, 1029, 586, 1066, 582, 1109, 580, 1141, 579, 1177, 578, 1208, 578, 1240, 577, 1267, 577, 1298, 577, 1324, 577, 1349, 578, 1373, 580, 1396, 582, 1417, 583, 1440, 586, 1460, 590, 1485, 593, 1502, 596, 1519, 597};
 	
 	std::vector<double> error;
-	
+
 	int step, x_max, y_max;
 	int x1, y1, x2, y2;
 	double x, y, vx, vy, x_prev, y_prev, vx_prev, vy_prev;
 	double fx, fy;
 	double theta,  omega, torque, theta_prev, omega_prev, torque_prev;
-	double m, g, dt;
-	double GAMMMA, C, D, density, area;
-	double GAMMMA_ver, GAMMMA_hor, l, I, G_diff, GAMMMA_ratio;
-	double c1, c2, c3, c4, constant_A, constant_B, constant_C, constant_D;
+	double GAMMMA_ver, GAMMMA_hor;
 	double sum_error, optimal_ratio, min_error;
 
 	Matrix v_matrix(2, 1);
@@ -53,10 +65,13 @@ int main(void)
 	Matrix tmp_matrix(2, 2);
 	Matrix f_matrix(2, 2);
 	Matrix GAMMMA_matrix(2, 2);
+	
+	Matrix v_dash_matrix(2, 1);
+	Matrix g_dash_matrix(2, 1);
 
 	// output image
+	//cv::Mat img = cv::imread("../../res/image_simulate/shuttle_trajectory/shuttle_point_1.png");
 	cv::Mat img = cv::imread("../../res/image_simulate/shuttle_trajectory/shuttle_point_3.png");
-	//cv::Mat img = cv::imread("../../res/image_simulate/shuttle_trajectory/shuttle_point_3.png");
 
 	/*
 	// output file name
@@ -69,40 +84,18 @@ int main(void)
 	// set parameter
 	x_max = img.cols;
 	y_max = img.rows;
-	m = 0.005;    // mass
-	g = 9.80665;  // gravity
-	dt = 1.0/60;  // delta time
-	l = 0.005;     // distance between center of gravity and working point of resistance force
-	I = 0.00001;  // inertia
-	
-	//density = 1.293;
-	//area = M_PI*0.0365*0.0365;
 
 	// draw net line
 	cv::line(img, cv::Point(1090,0), cv::Point(1090,img.rows), cv::Scalar(255,0,0), 2);
 
-	// set ratio considering air anisotropy
-	//GAMMMA_ratio = 1.40;
-	GAMMMA_ratio = 1.0;
-	//optimal_ratio = GAMMMA_ratio;
 	min_error = 0.0;
-	
-
 
 	// simulate until the object gets out of (x,y) range
 	for(int i = 1; i <= 10; i++) {
 		// initialize parameter
-		//GAMMMA_ratio += 0.01;
 
-		//GAMMMA = i*0.001;
-		//C = i*0.1;
-		//D = C*area*density;
-		GAMMMA_hor = i*0.001;
-		//GAMMMA_ver = i*0.001;
-		//GAMMMA_ver = 0.0057;
-		GAMMMA_ver = GAMMMA_hor*GAMMMA_ratio;
-		//GAMMMA_hor = GAMMMA_ver*GAMMMA_ratio;
-		G_diff = GAMMMA_ver - GAMMMA_hor;
+		GAMMMA_ver = i*0.001;
+		GAMMMA_hor = GAMMMA_ver*GAMMMA_ratio;
 		
 		GAMMMA_matrix.setMatrix({{-1*GAMMMA_ver, 0}, {0, -1*GAMMMA_hor}});
 		g_matrix.setMatrix({{0.0},{-1*dt*g}});
@@ -149,81 +142,30 @@ int main(void)
 			E_matrix.unitMatrix(2, 2);
 			T_matrix.unitMatrix(2, 2);
 			
+			g_dash_matrix.zeroMatrix(2, 1);
+			
 			step++;
-			if(step*2 >= v.size()) break;
+			if(step/10*2 >= v.size()) break;
 			
 			// update theta(t)--------------------------------------------------------------
 			theta = theta_prev + omega_prev*dt + torque_prev*dt*dt/(2*I);
 			
-			
 			// update vx(t), vy(t)---------------------------------------------------------
 			
-			// viscous resistance
-			//vx = (2*m - GAMMMA*dt)/(2*m + GAMMMA*dt)*_vx;
-			//vy = (2*m - GAMMMA*dt)/(2*m + GAMMMA*dt)*_vy - (2*m*g*dt/(2*m + GAMMMA*dt));
-			
-			// inertial resistance
-			//vx = (sqrt(m*m + 2*m*D*dt*vx - (D*D*dt*dt*vx*vx)) - m)/(D*dt);
-			//vy = (sqrt(m*m + 2*m*D*dt*vy - (D*D*dt*dt*vy*vy) - 2*m*g*D*dt*dt) - m)/(D*dt);
-			
-			// resistance considering rotation
-			/*
-			constant_E = 2*m + dt*(GAMMMA_hor*sin(theta)*sin(theta) + GAMMMA_ver*cos(theta)*cos(theta));
-			constant_D = constant_E*(2*m + dt*(GAMMMA_hor*cos(theta)*cos(theta) + GAMMMA_ver*sin(theta)*sin(theta)));
-			constant_C = dt*(G_diff)*sin(theta_prev)*cos(theta_prev)/constant_E + dt*G_diff*(2*m - dt*(GAMMMA_hor*cos(theta_prev)*cos(theta_prev) + GAMMMA_ver*sin(theta_prev)*sin(theta_prev)))*sin(theta)*cos(theta)/constant_D;
-			constant_B = (2*m - dt*(GAMMMA_hor*sin(theta_prev)*sin(theta_prev) + GAMMMA_ver*cos(theta_prev)*cos(theta_prev)))/constant_E + G_diff*G_diff*dt*dt*sin(theta_prev)*cos(theta_prev)*sin(theta)*cos(theta)/constant_D;
-			constant_A = 1 - G_diff*G_diff*dt*dt*sin(theta)*sin(theta)*cos(theta)*cos(theta)/constant_D;
-			
-			vx = constant_B*vx_prev/constant_A + constant_C*vy_prev/constant_A - G_diff*g*dt*dt/constant_A;
-			
-			constant_A = 2*m + dt*(GAMMMA_hor*cos(theta)*cos(theta) + GAMMMA_ver*sin(theta)*sin(theta));
-			vy = (2*m - dt*(GAMMMA_hor*cos(theta_prev)*cos(theta_prev) + GAMMMA_ver*sin(theta_prev)*sin(theta_prev)))/constant_A*vy_prev + dt*G_diff*(vx_prev*sin(theta_prev)*cos(theta_prev) + vx*sin(theta)*cos(theta))/constant_A - 2*m*g*dt/constant_A;
-			
-			*/
-			/*
-			c1 = (2*m - dt*(GAMMMA_ver*sin(theta_prev)*sin(theta_prev) + GAMMMA_hor*cos(theta_prev)*cos(theta_prev)))/(2*m + dt*(GAMMMA_ver*sin(theta)*sin(theta) + GAMMMA_hor*cos(theta)*cos(theta)));
-			c2 = dt*G_diff/(2*m + dt*(GAMMMA_ver*sin(theta)*sin(theta) + GAMMMA_hor*cos(theta)*cos(theta)));
-			
-			c3 = (2*m - dt*(GAMMMA_ver*cos(theta_prev)*cos(theta_prev) + GAMMMA_hor*sin(theta_prev)*sin(theta_prev)))/(2*m + dt*(GAMMMA_ver*cos(theta)*cos(theta) + GAMMMA_hor*sin(theta)*sin(theta)));
-			c4 = dt*G_diff/(2*m + dt*(GAMMMA_ver*cos(theta)*cos(theta) + GAMMMA_hor*sin(theta)*sin(theta)));
-			
-			constant_A = 1 - c2*c4*sin(theta)*sin(theta)*cos(theta)*cos(theta);
-			constant_B = c1 + c2*c4*sin(theta_prev)*sin(theta)*cos(theta_prev)*cos(theta);
-			constant_C = c2*(sin(theta_prev)*cos(theta_prev) + c3*sin(theta)*cos(theta));
-			constant_D = -c2*g*dt*sin(theta)*cos(theta);
-			
-			vx = (constant_B*vx_prev + constant_C*vy_prev + D)/constant_A;
-			vy = c3*vy_prev + c4*(vx_prev*sin(theta_prev)*cos(theta_prev) + vx*sin(theta)*cos(theta)) - g*dt;
-			*/
-
-			// matrix calc
-			// V(t+dt) = V(t) + (dt/(2*m))*{T*V(t) + T*V(t+dt) + 2*G}
-			// *** T' = (dt/(2*m))*T ***
-			// (E - T')*V(t+dt) = (E + T')*V(t) + (dt/m)*G
-			// V(t+dt) = right_side * (E - T')^(-1)
-			// set T'
-			calc_T(theta, GAMMMA_matrix, &T_matrix);
-			T_matrix.productMatrix(dt/(2*m));
-
-			// prepare another T'
-			tmp_matrix.setMatrix(T_matrix.getMatrix());
-
-			// calc (E + T') and (E - T')
-			T_matrix.addMatrix(E_matrix.getMatrix());
-			E_matrix.subtractMatrix(tmp_matrix.getMatrix());
-			
-			// calc right side
+			// rotate velocity (v_x, v_y) -> (v_ver, v_hor)
+			T_matrix.rotateMatrix(M_PI/2 - theta);
 			T_matrix.productMatrix(v_matrix.getMatrix());
-			T_matrix.addMatrix(g_matrix.getMatrix());
-			
-			// calc (E - T')^(-1)
-			E_matrix.invertMatrix();
-			
-			// calc matrix V(t+dt)
-			E_matrix.productMatrix(T_matrix.getMatrix());
-			v_matrix.setMatrix(E_matrix.getMatrix());
+			v_dash_matrix.setMatrix(T_matrix.getMatrix());
 
-			// substitute vx, vy
+			// update (v_ver, v_hor)
+			g_dash_matrix.setMatrix({{m*g*cos(theta)}, {-1*m*g*sin(theta)}});
+			update_velocity(&v_dash_matrix, g_dash_matrix, GAMMMA_matrix);
+
+			// undo rotation (v_ver, v_hor) -> (v_x, v_y)
+			E_matrix.rotateMatrix(-1*(M_PI/2 - theta));
+			E_matrix.productMatrix(v_dash_matrix.getMatrix());
+
+			v_matrix.setMatrix(E_matrix.getMatrix());
 			vx = v_matrix.getElement(0, 0);
 			vy = v_matrix.getElement(1, 0);
 
@@ -237,29 +179,12 @@ int main(void)
 			
 			
 			// set f(t)--------------------------------------------------------------------
-			// viscous resistance
-			//fx = -1*GAMMMA*_vx;
-			//fy = -1*GAMMMA*_vy - m*g;
-			// resistance considering rotation
-			//fx = G_diff*vy_prev*sin(theta_prev)*cos(theta_prev) - (GAMMMA_ver*sin(theta_prev)*sin(theta_prev) + GAMMMA_hor*cos(theta_prev)*cos(theta_prev))*vx_prev;
-			//fy = G_diff*vx_prev*sin(theta_prev)*cos(theta_prev) - (GAMMMA_ver*cos(theta_prev)*cos(theta_prev) + GAMMMA_hor*sin(theta_prev)*sin(theta_prev))*vy_prev - m*g;
-			
-			// matrix calc
 			calc_T(theta_prev, GAMMMA_matrix, &f_matrix);
 			f_matrix.productMatrix({{vx_prev}, {vy_prev}});
 			fx = f_matrix.getElement(0, 0);
 			fy = f_matrix.getElement(1, 0);
 			
 			// update x(t), y(t) ([m] -> [pixel])---------------------------------------------
-			
-			// viscous resistance
-			//x = x + ((dt - GAMMMA/(2*m)*dt*dt)*_vx)*1000/4.31;
-			//y = y + ((dt - (GAMMMA + m*g)/(2*m)*dt*dt)*_vy)*1000/4.31;
-			
-			// inertial resistance
-			//x = x + ((1 - D*vx*dt/(2*m))*vx*dt)*1000/4.31;
-			//y = y + ((1 - D*vy*dt/(2*m))*vy*dt - g*dt*dt/2)*1000/4.31;
-
 			// resistance considering rotation
 			x = x_prev + vx_prev*dt + fx*dt*dt/(2*m);
 			y = y_prev + vy_prev*dt + fy*dt*dt/(2*m);
@@ -282,16 +207,20 @@ int main(void)
 			// output theta value
 			//writing_file << step << " " << theta/M_PI*180 << " " << atan(vy/vx)/M_PI*180 << std::endl;
 
-			// draw shuttle trajectory
 			// calculate error
-			int _x = v[step*2];
-			int _y = v[step*2+1];
-			sum_error += sqrt(pow(x1-_x, 2) + pow(y1-_y, 2));
-			// simulate
-			//cv::circle(img, cv::Point(x1, y1), 4, cv::Scalar(i*25,0,0), 2);
-			cv::line(img, cv::Point(x1,y1), cv::Point(x2,y2), cv::Scalar(i*25,0,255));
-			// reality
-			cv::circle(img, cv::Point(_x, _y), 4, cv::Scalar(0,0,255), 2);
+			if(step%10 == 0) {
+				int _step = step/10;
+				int _x = v[_step*2];
+				int _y = v[_step*2+1];
+				sum_error += sqrt(pow(x1-_x, 2) + pow(y1-_y, 2));
+			
+				// draw shuttle trajectory
+				// simulate
+				cv::circle(img, cv::Point(x1, y1), 4, cv::Scalar(i*25,0,0), 2);
+				//cv::line(img, cv::Point(x1,y1), cv::Point(x2,y2), cv::Scalar(i*25,0,255));
+				// reality
+				//cv::circle(img, cv::Point(_x, _y), 4, cv::Scalar(0,0,255), 2);
+			}
 
 			// next step
 			x_prev = x;
@@ -301,26 +230,27 @@ int main(void)
 			theta_prev = theta;
 			omega_prev = omega;
 			torque_prev = torque;
-
 		}
+		
 		// distance error in actual trajectory and simulation trajectory
 		sum_error = sum_error*4.31/1000;
 		error.push_back(sum_error);
 		if(min_error == 0.0) min_error = sum_error;
 		if(min_error > sum_error) {
 			min_error = sum_error;
-			//optimal_ratio = GAMMMA_ratio;
 		}
 		std::cout << "distance error:" << sum_error << std::endl;
 	}
 	
-	//std::cout << "optimal_ratio:" << optimal_ratio << std::endl;
-
+	
+	std::cout << "index : distance error, average" << std::endl;
+	
 	for(int i = 0; i < error.size(); i++) {
-		std::cout << i << ":" << error[i] << std::endl;
+		std::cout << i << ": " << error[i] << ", " << error[i]/(step/10) << std::endl;
 	}
+	
 	cv::circle(img, cv::Point(X_INIT,Y_INIT), 4, cv::Scalar(0,0,0), 3);
-	cv::imwrite("../../res/image_simulate/1122/shuttle_point_11_23_4.png", img);
+	cv::imwrite("../../res/image_simulate/1130/shuttle_point_6.png", img);
 
 	return 0;
 }
@@ -341,6 +271,81 @@ void calc_T(double theta, Matrix GAMMMA_matrix, Matrix* m)
 	(*m).productMatrix(GAMMMA_matrix.getMatrix());
 	(*m).rotateMatrix(M_PI/2 - theta);
 }
+
+void update_velocity(Matrix *velocity, Matrix gravity, Matrix gammma)
+{
+	double v_ver = (*velocity).getElement(0, 0);
+	double v_hor = (*velocity).getElement(1, 0);
+	double grav_ver = gravity.getElement(0, 0);
+	double grav_hor = gravity.getElement(1, 0);
+	double gam_ver = abs(gammma.getElement(0, 0));
+	double gam_hor = abs(gammma.getElement(1, 1));
+	
+	double sign_ver = 1;
+	double sign_hor = 1;
+	if(v_ver > 0) sign_ver = -1;
+	if(v_hor > 0) sign_hor = -1;
+
+	// vertical----------------------------
+	calc_equation(&v_ver, gam_ver, grav_ver, sign_ver);
+	
+	// horizontal--------------------------
+	calc_equation(&v_hor, gam_hor, grav_hor, sign_hor);
+	
+	
+	// update velocity
+	(*velocity).setMatrix({{v_ver}, {v_hor}});
+}
+
+void calc_equation(double* v, double gammma, double gravity, double sign)
+{
+	// viscous resistance--------------------------------
+	/*
+	(*v) = gravity/gammma + (_v - gravity/gammma)*exp(-1*gammma*dt/m);
+	*/
+	
+	
+	// inertial resistance------------------------------
+	/*
+	double _v = (*v);
+	double C1, C2;
+	if( ((_v > 0)&&(gravity < 0)) || ((_v < 0)&&(gravity > 0)) ) {
+		gravity = abs(gravity);
+		C1 = sqrt(gravity/gammma);
+		
+		(*v) = C1*tan(sign*sqrt(gammma*gravity)*dt/m + atan(_v/C1));
+	} else {
+		gravity = abs(gravity);
+		C1 = sqrt(gravity/gammma);
+		
+		C2 = ((_v - C1)/(_v + C1))*exp(sign*sqrt(gammma*gravity)*dt/m);
+		(*v) = C1*(1 + C2)/(1 - C2);
+	}
+	*/
+
+	// both viscous and inertial resistance----------------
+	double _v = (*v);
+	double gammma_v = gammma;
+	double gammma_i = gammma*_GAMMMA_ratio;
+	double C = gravity/(sign*gammma_i) - gammma_v*gammma_v/(4*gammma_i*gammma_i);
+	
+	_v -= gammma_v/(2*sign*gammma_i);
+	
+	if(C > 0) {
+		C = sqrt(C);
+		
+		(*v) = C*tan(atan(_v/C) + sign*gammma_i*C*dt/m);
+	} else {
+		C = sqrt(abs(C));
+		
+		double _C = ((_v - C)/(_v + C))*exp(2*sign*gammma_i*C*dt/m);
+		(*v) = C*(1 + _C)/(1 - _C);
+	}
+	
+	(*v) += gammma_v/(2*sign*gammma_i);
+}
+
+
 
 
 

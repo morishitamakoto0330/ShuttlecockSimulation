@@ -11,16 +11,14 @@
 #include <math.h>
 
 #include "./extraction.hpp"
-#include "./debug.hpp"
 
 
 // global variable--------------------------------------------
-int point_number = 0;
 int area_threshold = 100;
 int x_threshold = 1090;
 
 // white image name to debug
-std::string img_white_name = "../../res/image_progressive/shuttle_point/shuttle_point.png";
+std::string img_white_name = "../../res/white_image.png";
 // shuttle detection
 std::vector<std::pair<int, int>> shuttle_trajectory;
 std::vector<int> shuttle_area_value;
@@ -174,10 +172,8 @@ void labeling(cv::Mat src, cv::Mat* dst)
 	}
 
 
-	// detect area in range x (x_lower <= x <= x_upper)
 	max_area = 0;
 
-	//cv::Mat img_white = cv::imread(img_white_name);
 	for(int i = area_value.size()-1; i >= 0; i--) {
 		
 		x = gravity_pos[i].first;
@@ -202,16 +198,6 @@ void labeling(cv::Mat src, cv::Mat* dst)
 	
 	
 	
-	// output
-	/*
-	std::cout << "------------------------" << std::endl;
-	std::cout << "labelNum=" << labelNum << std::endl;
-	std::cout << "goodAreaNum=" << area_value.size() << std::endl;
-	disp_grav_pos(gravity_pos);
-	disp_area_value(area_value);
-	*/
-	
-
 	// -------------------------------------------------------
 	// check shuttle
 	// no processing for the first time
@@ -262,7 +248,7 @@ void labeling(cv::Mat src, cv::Mat* dst)
 		}
 	}
 	
-	//----------------------------------
+	// previous tracking----------------------------------
 
 	if(prev_area_value.size() == 0) {
 		//no processing...
@@ -296,7 +282,7 @@ void labeling(cv::Mat src, cv::Mat* dst)
 						// index: prev_index-1, prev_index-2, ..., 0
 						// finish if no shuttle point
 						int now_index = shuttle_trajectory.size();
-						direction = signbit(x - _x); // 1:right 0:left
+						direction = signbit(x - _x); // 1:L->R 0:R->L
 						shuttle_trajectory.push_back(std::make_pair(x, y));
 						shuttle_trajectory.push_back(std::make_pair(_x, _y));
 						shuttle_area_value.push_back(area);
@@ -346,33 +332,6 @@ void labeling(cv::Mat src, cv::Mat* dst)
 						// punctuation    pos:(-1,-1) area:-1
 						shuttle_trajectory.push_back(std::make_pair(-1, -1));
 						shuttle_area_value.push_back(-1);
-
-
-
-
-
-						// write point in white image
-						/*
-						int b, g, r;
-						b = 0;
-						if(x < _x) {
-							g = 255;
-							r = 0;
-						} else {
-							g = 0;
-							r = 255;
-						}
-						
-						img_shuttle = cv::imread(img_white_name);
-						cv::line(img_shuttle, cv::Point(x_threshold, 0), cv::Point(x_threshold, img_shuttle.rows), cv::Scalar(255, 0, 0), 2);
-						cv::circle(img_shuttle, cv::Point(x,y), 4, cv::Scalar(b, g, r), 2);
-						cv::circle(img_shuttle, cv::Point(_x,_y), 4, cv::Scalar(b, g, r), 2);
-						cv::putText(img_shuttle, std::to_string(point_number), cv::Point(x+10,y+10), 0, 1.0, cv::Scalar(0,0,255));
-						cv::putText(img_shuttle, std::to_string(point_number), cv::Point(_x+10,_y+10), 0, 1.0, cv::Scalar(0,255,0));
-						cv::imwrite(img_white_name, img_shuttle);
-						
-						point_number++;
-						*/
 					}
 				}
 			}
@@ -384,97 +343,12 @@ void labeling(cv::Mat src, cv::Mat* dst)
 	prev_area_value.push_back(area_value);
 	prev_gravity_pos.push_back(gravity_pos);
 
+	// set previous frame limit (30 frames)
 	if(prev_area_value.size() > 30) {
 		prev_area_value.erase(prev_area_value.begin());
 		prev_gravity_pos.erase(prev_gravity_pos.begin());
 	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	/*
-	// isTrack => true:  check around max_area and save position
-	//         => false: save new max_area position or ...
 	
-	// start tracking
-	if(shuttle_trajectory.size() == 0 && area_value.size() != 0) {
-		isTrack = true;
-		shuttle_trajectory.push_back(std::make_pair(max_x, max_y));
-		shuttle_area_value.push_back(max_area);
-	}
-
-
-	int diff, target_x, target_y, target_area;
-	int near_diff = 1000;
-	int near_index = 0;
-
-
-	if(isTrack && shuttle_trajectory.size() != 0) {
-		// get near position
-		target_area = shuttle_area_value.back();
-		target_x = shuttle_trajectory.back().first;
-		target_y = shuttle_trajectory.back().second;
-
-		for(int i = 0; i < area_value.size(); i++) {
-			diff = std::abs(gravity_pos[i].first - target_x);
-			diff += std::abs(gravity_pos[i].second - target_y);
-
-			if(diff <= near_diff) {
-				near_diff = diff;
-				near_index = i;
-			}
-		}
-
-		// check area value and insert new shuttle data
-		area = shuttle_area_value[near_index];
-
-		if(std::abs(target_area - area) <= 30) {
-			shuttle_area_value.push_back(area);
-
-			x = gravity_pos[near_index].first;
-			y = gravity_pos[near_index].second;
-			std::cout << "(x,y)=(" << x << "," << y << ")" << std::endl;
-			shuttle_trajectory.push_back(std::make_pair(x, y));
-		}
-		else {
-			std::cout << "shuttle_area_value_num=" << shuttle_area_value.size();
-			std::cout << std::endl;
-			disp_area_value(shuttle_area_value);
-			exit(1);
-		}
-	}
-	
-	else if(area_value.size() != 0) {
-		//...
-	}
-	else {
-		//...
-	}
-	*/
-
 	*dst = _dst.clone();
 }
 
@@ -619,7 +493,7 @@ void combine_image(cv::Mat im1, cv::Mat im2, cv::Mat* dst)
 
 
 /*
- * create white color image
+ * create mask image(8UC3)
  */
 void create_image(cv::Mat src, cv::Mat* dst, cv::Mat mask)
 {

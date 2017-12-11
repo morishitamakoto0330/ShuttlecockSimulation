@@ -15,14 +15,14 @@
 
 int main(void)
 {
-	Matrix m1(4, 4);
-	Matrix m2(4, 4);
+	Matrix m1(2, 2);
+	Matrix m2(2, 1);
 	m1.randomCreateMatrix();
-	m2.setMatrix(m1.getMatrix());
+	m2.randomCreateMatrix();
+
+	m1.disp();
+	m2.disp();
 	
-	m1.disp();
-	m1.invertMatrix();
-	m1.disp();
 	m1.productMatrix(m2.getMatrix());
 	m1.disp();
 	/*
