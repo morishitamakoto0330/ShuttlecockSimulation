@@ -1,7 +1,7 @@
 import re
 
 # open file and get data
-f = open("./data_1211.txt")
+f = open("./data_1215.txt")
 data = f.read()
 f.close()
 
@@ -56,14 +56,14 @@ for i in range(len(pos)):
 """
 
 # file write
-f = open("./_data_1211.txt", "w")
+f = open("./_data_1215.txt", "w")
 
 for i in range(len(pos)):
     x = pos[i][0]
     y = pos[i][1]
     
     if x != -1:
-        f.write(str(x)+", "+str(y))
+        f.write(str(x)+","+str(y))
         f.write("\n")
     else:
         f.write("\n")

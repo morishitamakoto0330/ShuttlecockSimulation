@@ -17,8 +17,11 @@
 //static const int X_INIT = 534;
 //static const int Y_INIT = 463;
 // data3
-static const int X_INIT = 956;
-static const int Y_INIT = 582;
+//static const int X_INIT = 956;
+//static const int Y_INIT = 582;
+int X_INIT, Y_INIT;
+int DATA = 3;
+double VX_INIT, VY_INIT;
 
 const double m = 0.005;      // mass
 const double g = 9.80665;    // gravity
@@ -27,26 +30,29 @@ const double dt = 1.0/600;   // delta time
 const double l = 0.005;
 const double I = 0.00001;    // inertia
 // set ratio considering air anisotropy
-const double GAMMMA_ratio = 1.0;
-const double _GAMMMA_ratio = 1.0;
+const double ratio = 1.5;
+const double _ratio = 0.1;
+
+
+// adjustable parameter
+double GAMMMA_ine, GAMMMA_ver, GAMMMA_hor;
+
+
 
 void fix_xy(double* x, double* y, int* x_pixel, int* y_pixel);
 void calc_T(double theta, Matrix GAMMMA_matrix, Matrix* m);
 void update_velocity(Matrix* velocity, Matrix gravity, Matrix gammma);
 void calc_equation(double* v, double gammma, double gravity, double sign);
+void file_read(std::vector<int> *v, int data_num);
+void fit_line(std::vector<int> v, int n);
 
 
 
 int main(void)
 {
-	// data1
-	//std::vector<int> v{534, 463, 666, 442, 754, 437, 831, 441, 901, 444, 967, 444, 1027, 446, 1083, 449, 1136, 453, 1183, 457, 1232, 461, 1274, 464, 1316, 468, 1355, 473, 1394, 479, 1431, 484, 1464, 490, 1497, 495, 1529, 501, 1559, 509, 1589, 516, 1618, 523};
-	// data2
-	//std::vector<int> v{568, 547, 710, 494, 796, 477, 875, 471, 949, 461, 1012, 451, 1071, 444, 1126, 438, 1177, 433, 1224, 429, 1269, 426, 1311, 423, 1351, 421, 1388, 419, 1423, 418, 1456, 417, 1488, 418, 1519, 418, 1547, 419, 1576, 421, 1601, 423};
-	// data3
-	std::vector<int> v{956, 582, 987, 556, 1017, 529, 1041, 505, 1066, 480, 1092, 456, 1114, 436, 1137, 418, 1160, 399, 1179, 385, 1200, 370, 1221, 356, 1239, 343, 1257, 331, 1274, 320, 1289, 311, 1305, 301, 1324, 292, 1336, 285, 1351, 277, 1366, 270, 1380, 264, 1395, 258, 1409, 254, 1426, 250, 1439, 247, 1452, 244, 1464, 241, 1476, 242, 1485, 240, 1502, 239, 1512, 239, 1523, 239, 1537, 242, 1546, 242, 1561, 243, 1569, 245, 1581, 249, 1591, 252, 1606, 258, 1617, 262, 1627, 268, 1637, 272, 1647, 278, 1658, 285, 1668, 290, 1678, 297, 1687, 304, 1694, 310, 1707, 321, 1717, 330, 1726, 339, 1735, 349, 1744, 359, 1753, 370, 1761, 380, 1770, 392, 1779, 403};
-	// data4
-	//std::vector<int> v{838, 601, 888, 595, 938, 594, 985, 591, 1029, 586, 1066, 582, 1109, 580, 1141, 579, 1177, 578, 1208, 578, 1240, 577, 1267, 577, 1298, 577, 1324, 577, 1349, 578, 1373, 580, 1396, 582, 1417, 583, 1440, 586, 1460, 590, 1485, 593, 1502, 596, 1519, 597};
+	std::vector<int> v;
+	file_read(&v, DATA);
+	
 	
 	std::vector<double> error;
 
@@ -55,7 +61,6 @@ int main(void)
 	double x, y, vx, vy, x_prev, y_prev, vx_prev, vy_prev;
 	double fx, fy;
 	double theta,  omega, torque, theta_prev, omega_prev, torque_prev;
-	double GAMMMA_ver, GAMMMA_hor;
 	double sum_error, optimal_ratio, min_error;
 
 	Matrix v_matrix(2, 1);
@@ -70,16 +75,7 @@ int main(void)
 	Matrix g_dash_matrix(2, 1);
 
 	// output image
-	//cv::Mat img = cv::imread("../../res/image_simulate/shuttle_trajectory/shuttle_point_1.png");
-	cv::Mat img = cv::imread("../../res/image_simulate/shuttle_trajectory/shuttle_point_3.png");
-
-	/*
-	// output file name
-	std::string file_name = "data.txt";
-
-	std::ofstream writing_file;
-	writing_file.open(file_name, std::ios::out);
-	*/
+	cv::Mat img = cv::imread("../../res/white_image.png");
 
 	// set parameter
 	x_max = img.cols;
@@ -93,9 +89,10 @@ int main(void)
 	// simulate until the object gets out of (x,y) range
 	for(int i = 1; i <= 10; i++) {
 		// initialize parameter
-
 		GAMMMA_ver = i*0.001;
-		GAMMMA_hor = GAMMMA_ver*GAMMMA_ratio;
+		//GAMMMA_ver = i*0.0001 + 0.008;
+		GAMMMA_hor = GAMMMA_ver*ratio;
+		GAMMMA_ine = GAMMMA_ver*_ratio;
 		
 		GAMMMA_matrix.setMatrix({{-1*GAMMMA_ver, 0}, {0, -1*GAMMMA_hor}});
 		g_matrix.setMatrix({{0.0},{-1*dt*g}});
@@ -110,12 +107,8 @@ int main(void)
 		x2 = 0;
 		y2 = 0;
 
-		// data1 (n=2)
-		//vx = 132*60*4.31/1000;
-		//vy = 21*60*4.31/1000;
-		// data3 (n=7)
-		vx = 7.63772;
-		vy = 7.15113;
+		vx = VX_INIT;
+		vy = VY_INIT;
 		
 		fx = 0.0;
 		fy = 0.0;
@@ -145,7 +138,7 @@ int main(void)
 			g_dash_matrix.zeroMatrix(2, 1);
 			
 			step++;
-			if(step/10*2 >= v.size()) break;
+			if(step/10.0 - v.size()/2.0 + 1.0 > 0) break;
 			
 			// update theta(t)--------------------------------------------------------------
 			theta = theta_prev + omega_prev*dt + torque_prev*dt*dt/(2*I);
@@ -216,11 +209,12 @@ int main(void)
 			
 				// draw shuttle trajectory
 				// simulate
-				cv::circle(img, cv::Point(x1, y1), 4, cv::Scalar(i*25,0,0), 2);
+				//cv::circle(img, cv::Point(x1, y1), 4, cv::Scalar(i*25,0,0), 2);
 				//cv::line(img, cv::Point(x1,y1), cv::Point(x2,y2), cv::Scalar(i*25,0,255));
 				// reality
-				//cv::circle(img, cv::Point(_x, _y), 4, cv::Scalar(0,0,255), 2);
+				cv::circle(img, cv::Point(_x, _y), 4, cv::Scalar(0,0,255), 2);
 			}
+			cv::line(img, cv::Point(x1,y1), cv::Point(x2,y2), cv::Scalar(i*25,0,255));
 
 			// next step
 			x_prev = x;
@@ -250,8 +244,15 @@ int main(void)
 	}
 	
 	cv::circle(img, cv::Point(X_INIT,Y_INIT), 4, cv::Scalar(0,0,0), 3);
-	cv::imwrite("../../res/image_simulate/1130/shuttle_point_6.png", img);
+	cv::imwrite("../../res/image_simulate/1215/shuttle_point_1.png", img);
 
+	
+	std::cout << std::endl;
+	std::cout << "X_INIT=" << X_INIT << std::endl;
+	std::cout << "Y_INIT=" << Y_INIT << std::endl;
+	std::cout << "VX_INIT=" << VX_INIT << std::endl;
+	std::cout << "VY_INIT=" << VY_INIT << std::endl;
+	
 	return 0;
 }
 
@@ -287,10 +288,15 @@ void update_velocity(Matrix *velocity, Matrix gravity, Matrix gammma)
 	if(v_hor > 0) sign_hor = -1;
 
 	// vertical----------------------------
-	calc_equation(&v_ver, gam_ver, grav_ver, sign_ver);
+	//calc_equation(&v_ver, gam_ver, grav_ver, sign_ver);
+	
+	v_ver = v_ver + (-1*gam_ver*v_ver + grav_ver)*dt/m;
+	
 	
 	// horizontal--------------------------
-	calc_equation(&v_hor, gam_hor, grav_hor, sign_hor);
+	//calc_equation(&v_hor, gam_hor, grav_hor, sign_hor);
+	
+	v_hor = v_hor + (-1*GAMMMA_ine*abs(v_hor)*v_hor - gam_hor*v_hor + grav_hor)*dt/m;
 	
 	
 	// update velocity
@@ -324,6 +330,7 @@ void calc_equation(double* v, double gammma, double gravity, double sign)
 	*/
 
 	// both viscous and inertial resistance----------------
+	/*
 	double _v = (*v);
 	double gammma_v = gammma;
 	double gammma_i = gammma*_GAMMMA_ratio;
@@ -343,7 +350,78 @@ void calc_equation(double* v, double gammma, double gravity, double sign)
 	}
 	
 	(*v) += gammma_v/(2*sign*gammma_i);
+	*/
+
 }
+
+void file_read(std::vector<int> *v, int data_num)
+{
+	std::ifstream ifs("../python_work/_data_1215.txt");
+	std::string str, buf;
+	std::vector<int> _v;
+	int data_count = 1;
+	
+	if(ifs.fail()) {
+		std::cerr << "failed to read file." << std::endl;
+		exit(1);
+	}
+	
+	while(getline(ifs, str)) {
+		std::stringstream _str;
+		if(str == "")  data_count++;
+		_str << str;
+		
+		if(data_count == data_num) {
+			while(getline(_str, buf, ',')) {
+				_v.push_back(std::stoi(buf));
+			}
+		} else if(data_count > data_num) break;
+	}
+
+	for(int i = 0; i < _v.size(); i++) {
+		std::cout << _v[i] << std::endl;
+	}
+	
+	// set parameter
+	X_INIT = _v[0];
+	Y_INIT = _v[1];
+	VX_INIT = (_v[2] - _v[0])*60*4.31/1000;
+	VY_INIT = -1*(_v[3] - _v[1])*60*4.31/1000;
+	
+	*v = _v;
+}
+
+
+void fit_line(std::vector<int> v, int n)
+{
+	int sum_x = 0, sum_y = 0, sum_xx = 0, sum_xy = 0, x, y;
+	
+	for(int i = 0; i < n*2; i += 2) {
+		x = v[i];
+		y = v[i + 1];
+		
+		sum_x += x;
+		sum_y += y;
+		sum_xy += x*y;
+		sum_xx += x*x;
+	}
+	
+	double a = (double)(sum_x*sum_y - n*sum_xy)/(sum_x*sum_x - n*sum_xx);
+	double v_size = sqrt(VX_INIT*VX_INIT + VY_INIT*VY_INIT);
+	
+	a *= -1;
+	
+	// set (vx, vy)
+	VX_INIT = v_size/sqrt(1 + a*a);
+	VY_INIT = a*VX_INIT;
+}
+
+
+
+
+
+
+
 
 
 
