@@ -13,29 +13,28 @@
 
 #include "./matrix.hpp"
 
-// data1
-//static const int X_INIT = 534;
-//static const int Y_INIT = 463;
-// data3
-//static const int X_INIT = 956;
-//static const int Y_INIT = 582;
 int X_INIT, Y_INIT;
-int DATA = 3;
+int DATA = 9;
 double VX_INIT, VY_INIT;
+
+std::string img_str = "../../res/image_simulate/0116/data" + std::to_string(DATA) + "-";
+std::string tmp_str;
 
 const double m = 0.005;      // mass
 const double g = 9.80665;    // gravity
 const double dt = 1.0/600;   // delta time
 // distance between center of gravity and working point of resistance force
-const double l = 0.005;
+double l = 0.005;
 const double I = 0.00001;    // inertia
+const double v_mag_x = 0.80;    // velocity magnification(x)
+const double v_mag_y = 0.78;    // velocity magnification(y)
+const double angle = 15.0;     // shuttle angle
+
+
 // set ratio considering air anisotropy
-const double ratio = 1.5;
-const double _ratio = 0.1;
-
-
+double ratio;
 // adjustable parameter
-double GAMMMA_ine, GAMMMA_ver, GAMMMA_hor;
+double GAMMMA_ver, GAMMMA_hor, GAMMMA_ine;
 
 
 
@@ -46,12 +45,20 @@ void calc_equation(double* v, double gammma, double gravity, double sign);
 void file_read(std::vector<int> *v, int data_num);
 void fit_line(std::vector<int> v, int n);
 
+void scale(std::vector<int> *v, double theta);
 
 
 int main(void)
 {
-	std::vector<int> v;
+	std::vector<int> v;  // reality shuttle position
 	file_read(&v, DATA);
+	scale(&v, angle/180*M_PI);
+
+	// consider angle error
+	//fit_vector(&v);
+	
+	// adjust VX_INIT, VY_INIT
+	fit_line(v, 5);
 	
 	
 	std::vector<double> error;
@@ -76,6 +83,7 @@ int main(void)
 
 	// output image
 	cv::Mat img = cv::imread("../../res/white_image.png");
+	//cv::Mat img = cv::imread("../../res/error/_error_scale_15deg.png");
 
 	// set parameter
 	x_max = img.cols;
@@ -86,13 +94,20 @@ int main(void)
 
 	min_error = 0.0;
 
+
+	// init parameter ---------------------------------------------------
+	ratio = 0.2;
+	GAMMMA_ine = 0.0012;
+	GAMMMA_ver = 0.012;
+	// -------------------------------------------------------
+
+
 	// simulate until the object gets out of (x,y) range
-	for(int i = 1; i <= 10; i++) {
-		// initialize parameter
-		GAMMMA_ver = i*0.001;
-		//GAMMMA_ver = i*0.0001 + 0.008;
+	for(int i = 1; i <= 1; i++) {
+		//GAMMMA_ine = i*0.001;
+		//ratio = 0.1*i;
+		//GAMMMA_ver = 0.001*i;
 		GAMMMA_hor = GAMMMA_ver*ratio;
-		GAMMMA_ine = GAMMMA_ver*_ratio;
 		
 		GAMMMA_matrix.setMatrix({{-1*GAMMMA_ver, 0}, {0, -1*GAMMMA_hor}});
 		g_matrix.setMatrix({{0.0},{-1*dt*g}});
@@ -197,9 +212,6 @@ int main(void)
 			std::cout << "(fx,fy)=(" << fx << "," << fy << ")" << std::endl;
 			std::cout << "θ=" << theta/M_PI*180 << ",_θ=" << atan(vy/vx)/M_PI*180 << ",ω=" << omega << ",T=" << torque << std::endl;
 
-			// output theta value
-			//writing_file << step << " " << theta/M_PI*180 << " " << atan(vy/vx)/M_PI*180 << std::endl;
-
 			// calculate error
 			if(step%10 == 0) {
 				int _step = step/10;
@@ -209,12 +221,13 @@ int main(void)
 			
 				// draw shuttle trajectory
 				// simulate
-				//cv::circle(img, cv::Point(x1, y1), 4, cv::Scalar(i*25,0,0), 2);
-				//cv::line(img, cv::Point(x1,y1), cv::Point(x2,y2), cv::Scalar(i*25,0,255));
+				cv::circle(img, cv::Point(x1, y1), 4, cv::Scalar(i*25,0,0), 2);
 				// reality
 				cv::circle(img, cv::Point(_x, _y), 4, cv::Scalar(0,0,255), 2);
 			}
-			cv::line(img, cv::Point(x1,y1), cv::Point(x2,y2), cv::Scalar(i*25,0,255));
+			
+			// simulate
+			//cv::line(img, cv::Point(x1,y1), cv::Point(x2,y2), cv::Scalar(i*25,0,255));
 
 			// next step
 			x_prev = x;
@@ -240,11 +253,44 @@ int main(void)
 	std::cout << "index : distance error, average" << std::endl;
 	
 	for(int i = 0; i < error.size(); i++) {
-		std::cout << i << ": " << error[i] << ", " << error[i]/(step/10) << std::endl;
+		//std::cout << i << ": " << error[i] << ", " << error[i]/(step/10 + 1) << std::endl;
+		std::cout << i << ": " << error[i] << ", " << error[i]/(v.size()/2) << std::endl;
 	}
 	
 	cv::circle(img, cv::Point(X_INIT,Y_INIT), 4, cv::Scalar(0,0,0), 3);
-	cv::imwrite("../../res/image_simulate/1215/shuttle_point_1.png", img);
+	
+	tmp_str = std::to_string(v_mag_x);
+	tmp_str.erase(tmp_str.begin() + 1);
+	img_str += "v_mag_x=" + tmp_str;
+	
+	tmp_str = std::to_string(v_mag_y);
+	tmp_str.erase(tmp_str.begin() + 1);
+	img_str += "v_mag_y=" + tmp_str;
+	
+	tmp_str = std::to_string(ratio);
+	tmp_str.erase(tmp_str.begin() + 1);
+	img_str += "ratio=" + tmp_str;
+	
+	tmp_str = std::to_string(GAMMMA_ver);
+	tmp_str.erase(tmp_str.begin() + 1);
+	img_str += "GAMMMA_ver=" + tmp_str;
+
+	tmp_str = std::to_string(GAMMMA_ine);
+	tmp_str.erase(tmp_str.begin() + 1);
+	img_str += "GAMMMA_ine=" + tmp_str;
+
+	tmp_str = std::to_string(l);
+	tmp_str.erase(tmp_str.begin() + 1);
+	img_str += "l=" + tmp_str;
+	
+	tmp_str = std::to_string(angle);
+	if(angle >= 10.0) tmp_str.erase(tmp_str.begin() + 2);
+	else tmp_str.erase(tmp_str.begin() + 1);
+	img_str += "angle=" + tmp_str;
+	
+	img_str += ".png";
+	cv::imwrite(img_str, img);
+	
 
 	
 	std::cout << std::endl;
@@ -282,11 +328,6 @@ void update_velocity(Matrix *velocity, Matrix gravity, Matrix gammma)
 	double gam_ver = abs(gammma.getElement(0, 0));
 	double gam_hor = abs(gammma.getElement(1, 1));
 	
-	double sign_ver = 1;
-	double sign_hor = 1;
-	if(v_ver > 0) sign_ver = -1;
-	if(v_hor > 0) sign_hor = -1;
-
 	// vertical----------------------------
 	//calc_equation(&v_ver, gam_ver, grav_ver, sign_ver);
 	
@@ -295,7 +336,14 @@ void update_velocity(Matrix *velocity, Matrix gravity, Matrix gammma)
 	
 	// horizontal--------------------------
 	//calc_equation(&v_hor, gam_hor, grav_hor, sign_hor);
-	
+
+	/*
+	if(v_hor > 10.0) {
+		v_hor = v_hor + (-1*GAMMMA_ine*abs(v_hor)*v_hor - gam_hor*v_hor + grav_hor)*dt/m;
+	} else {
+		v_hor = v_hor + (-1*gam_hor*v_hor + grav_hor)*dt/m;
+	}
+	*/
 	v_hor = v_hor + (-1*GAMMMA_ine*abs(v_hor)*v_hor - gam_hor*v_hor + grav_hor)*dt/m;
 	
 	
@@ -378,10 +426,6 @@ void file_read(std::vector<int> *v, int data_num)
 		} else if(data_count > data_num) break;
 	}
 
-	for(int i = 0; i < _v.size(); i++) {
-		std::cout << _v[i] << std::endl;
-	}
-	
 	// set parameter
 	X_INIT = _v[0];
 	Y_INIT = _v[1];
@@ -395,6 +439,7 @@ void file_read(std::vector<int> *v, int data_num)
 void fit_line(std::vector<int> v, int n)
 {
 	int sum_x = 0, sum_y = 0, sum_xx = 0, sum_xy = 0, x, y;
+	int sign_vx = signbit(VX_INIT) ? -1 : 1;
 	
 	for(int i = 0; i < n*2; i += 2) {
 		x = v[i];
@@ -407,21 +452,72 @@ void fit_line(std::vector<int> v, int n)
 	}
 	
 	double a = (double)(sum_x*sum_y - n*sum_xy)/(sum_x*sum_x - n*sum_xx);
+	
+	VX_INIT = VX_INIT*1000/4.31/60;
+	VY_INIT = VY_INIT*1000/4.31/60;
 	double v_size = sqrt(VX_INIT*VX_INIT + VY_INIT*VY_INIT);
 	
 	a *= -1;
 	
-	// set (vx, vy)
-	VX_INIT = v_size/sqrt(1 + a*a);
+	// set (vx, vy) [pixel/(1/60)s]
+	VX_INIT = v_size/sqrt(1 + a*a)*sign_vx;
 	VY_INIT = a*VX_INIT;
+
+	// convert -> [m/s]
+	VX_INIT = VX_INIT*60*4.31/1000;
+	VY_INIT = VY_INIT*60*4.31/1000;
+
+	VX_INIT *= v_mag_x;
+	VY_INIT *= v_mag_y;
 }
 
 
 
+void scale(std::vector<int> *v, double theta)
+{
+	int x, y, prev_x = (*v)[0], prev_y = (*v)[1];
+	double dx;
+	std::vector<int> delta_v;
+
+	for(int i = 2; i < (*v).size(); i = i + 2) {
+		x = (*v)[i];
+		y = (*v)[i + 1];
+
+		dx = (double)(x - prev_x);
+		dx /= cos(theta);
+
+		delta_v.push_back(std::round(dx - (x - prev_x)));
+
+		prev_x = x;
+		prev_y = y;
+	}
+	
+	/*
+	cv::Mat img = cv::imread("../../res/white_image.png");
+
+	
+	for(int i = 0; i < (*v).size(); i = i + 2) {
+		cv::circle(img, cv::Point((*v)[i], (*v)[i + 1]), 4, cv::Scalar(0, 0, 255), 2);
+	}
+	*/
+	
+	int delta_sum = 0;
+	
+	for(int i = 2; i < (*v).size(); i = i + 2) {
+		delta_sum += delta_v[i/2 - 1];
+		(*v)[i] += delta_sum;
+	}
+
+	/*
+	for(int i = 0; i < (*v).size(); i = i + 2) {
+		cv::circle(img, cv::Point((*v)[i], (*v)[i + 1]), 4, cv::Scalar(255, 0, 0), 2);
+	}
+
+	cv::imwrite("../../res/error/hoge_15deg.png", img);
+	*/
 
 
-
-
+}
 
 
 
