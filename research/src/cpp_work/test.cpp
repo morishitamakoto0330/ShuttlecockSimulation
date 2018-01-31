@@ -16,23 +16,53 @@ void scale(std::vector<int> *v, double theta);
 
 int main(void)
 {
+	Matrix m1(2, 1);
+	Matrix m2(2, 2);
+	
+	m1.setMatrix({{1.0}, {1.0}});
+	m2.unitMatrix(2, 2);
 
+	// check
+	m1.disp();
+	m2.disp();
+
+	m2.rotateMatrix(M_PI/4);
+	m2.productMatrix(m1.getMatrix());
+
+	// result
+	m2.disp();
+
+
+/*
 	std::vector<int> v;
-	double theta = 15/180.0*M_PI;
+	cv::Mat img_white;
+	std::string img_str;
+	
+	for(int i = 1; i <= 127; i++) {
+		file_read(&v, i);
+		img_white = cv::imread("../../res/white_image.png");
+		img_str = "../../res/image_reality/0121/shuttle_point_";
+		
+		for(int j = 0; j < v.size(); j += 2) {
+			cv::circle(img_white, cv::Point(v[j], v[j + 1]), 4, cv::Scalar(0, 0, 255), 2);
+		}
+		
+		// save
+		img_str += std::to_string(i) + ".png";
+		cv::imwrite(img_str, img_white);
+	}
+*/
 
-	file_read(&v, 4);
-	scale(&v, theta);
-	
-	
-	
-	
-	
+
+
+
 	/*
+	
 	std::vector<int> v, delta_v;
 	file_read(&v, 4);
 
 	int x, y, prev_x = v[0], prev_y = v[1], x_th = 1090;
-	double d = 6.0, _x, delta_s, theta, delta_p;
+	double d = 9.0, _x, delta_s, theta, delta_p;
 
 	for(int i = 2; i < v.size(); i = i + 2) {
 		x = v[i];
@@ -80,10 +110,9 @@ int main(void)
 		cv::circle(img, cv::Point(v[i], v[i + 1]), 4, cv::Scalar(255, 0, 0), 2);
 	}
 
-	cv::imwrite("../../res/error/error_x.png", img);
+	cv::imwrite("../../res/error/error_x_3.png", img);
 
 */
-
 
 
 
@@ -291,20 +320,17 @@ int main(void)
 	
 	
 	
-	
 	/*
 	int x, y, key;
-
-	//std::string img_str = "../../res/image_progressive/shuttle_point/shuttle_point.png";
 
 	
 	cv::Mat frame, img;
 	mouseParam mouseEvent;
 	
-	cv::VideoCapture cap("../../res/movie/progressive_1.MTS");
+	cv::VideoCapture cap("../../res/movie/2017_01_18.mp4");
 
 	if(!cap.isOpened()) return -1;
-	std::cout << "MTS file open." << std::endl;
+	std::cout << "mp4 file open." << std::endl;
 
 	cap >> frame;
 	img = frame.clone();
@@ -332,11 +358,6 @@ int main(void)
 			std::cout << "(x,y)=(" << x << "," << y << ")" << std::endl;
 		}
 
-
-		// show image
-		//cv::imwrite(img_str, img);
-		//cv::resize(img, img, cv::Size(), 0.6, 0.6);
-		//cv::imshow(win_name, img);
 		
 		if(key == 27) break;
 	}
@@ -346,7 +367,8 @@ int main(void)
 
 void file_read(std::vector<int> *v, int data_num)
 {
-	std::ifstream ifs("../python_work/_data_1215.txt");
+	//std::ifstream ifs("../python_work/_data_1215.txt");
+	std::ifstream ifs("../python_work/_data_0121.txt");
 	std::string str, buf;
 	std::vector<int> _v;
 	int data_count = 1;

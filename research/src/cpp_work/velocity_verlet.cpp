@@ -8,29 +8,29 @@
 #include <math.h>
 #include <string.h>
 #include <fstream>
-//#include <sys/time.h>
-//#include <sys/resource.h>
 
 #include "./matrix.hpp"
 
 int X_INIT, Y_INIT;
-int DATA = 9;
+int DATA = 11;
 double VX_INIT, VY_INIT;
 
-std::string img_str = "../../res/image_simulate/0116/data" + std::to_string(DATA) + "-";
+std::string img_str = "../../res/image_simulate/0131/data" + std::to_string(DATA) + "-";
 std::string tmp_str;
 
 const double m = 0.005;      // mass
 const double g = 9.80665;    // gravity
 const double dt = 1.0/600;   // delta time
-// distance between center of gravity and working point of resistance force
-double l = 0.005;
-const double I = 0.00001;    // inertia
-const double v_mag_x = 0.80;    // velocity magnification(x)
-const double v_mag_y = 0.78;    // velocity magnification(y)
+const double mpp = 4.17/1000;   // [m/pixel]
+
+const double I = 0.000075;    // inertia
+const double v_mag_x = 1.20;    // velocity magnification(x)
+const double v_mag_y = 1.20;    // velocity magnification(y)
 const double angle = 15.0;     // shuttle angle
 
 
+// distance between center of gravity and working point of resistance force
+double l;
 // set ratio considering air anisotropy
 double ratio;
 // adjustable parameter
@@ -41,10 +41,8 @@ double GAMMMA_ver, GAMMMA_hor, GAMMMA_ine;
 void fix_xy(double* x, double* y, int* x_pixel, int* y_pixel);
 void calc_T(double theta, Matrix GAMMMA_matrix, Matrix* m);
 void update_velocity(Matrix* velocity, Matrix gravity, Matrix gammma);
-void calc_equation(double* v, double gammma, double gravity, double sign);
 void file_read(std::vector<int> *v, int data_num);
 void fit_line(std::vector<int> v, int n);
-
 void scale(std::vector<int> *v, double theta);
 
 
@@ -53,15 +51,15 @@ int main(void)
 	std::vector<int> v;  // reality shuttle position
 	file_read(&v, DATA);
 	scale(&v, angle/180*M_PI);
-
-	// consider angle error
-	//fit_vector(&v);
 	
 	// adjust VX_INIT, VY_INIT
 	fit_line(v, 5);
 	
-	
-	std::vector<double> error;
+	std::vector<std::vector<double>> theta_vector, velocity_theta_vector;
+	std::vector<double> error, _theta_vector, _velocity_theta_vector;
+
+	std::vector<std::vector<std::pair<double, double>>> velocity_vector, velocity_dash_vector;
+	std::vector<std::pair<double, double>> _velocity_vector, _velocity_dash_vector;
 
 	int step, x_max, y_max;
 	int x1, y1, x2, y2;
@@ -83,7 +81,6 @@ int main(void)
 
 	// output image
 	cv::Mat img = cv::imread("../../res/white_image.png");
-	//cv::Mat img = cv::imread("../../res/error/_error_scale_15deg.png");
 
 	// set parameter
 	x_max = img.cols;
@@ -95,18 +92,20 @@ int main(void)
 	min_error = 0.0;
 
 
-	// init parameter ---------------------------------------------------
-	ratio = 0.2;
-	GAMMMA_ine = 0.0012;
-	GAMMMA_ver = 0.012;
+	// set parameter ---------------------------------------------------
+	l = 0.010;
+	ratio = 0.01;
+	GAMMMA_ine = 0.0014;
+	GAMMMA_ver = 0.024;
 	// -------------------------------------------------------
 
 
 	// simulate until the object gets out of (x,y) range
 	for(int i = 1; i <= 1; i++) {
-		//GAMMMA_ine = i*0.001;
-		//ratio = 0.1*i;
-		//GAMMMA_ver = 0.001*i;
+		//l = 0.010*i;
+		//GAMMMA_ine = 0.0005 + 0.0001*i;
+		//ratio = 0.00 + 0.001*i;
+		//GAMMMA_ver = 0.015 + 0.001*i;
 		GAMMMA_hor = GAMMMA_ver*ratio;
 		
 		GAMMMA_matrix.setMatrix({{-1*GAMMMA_ver, 0}, {0, -1*GAMMMA_hor}});
@@ -114,6 +113,11 @@ int main(void)
 		
 		step = 0;
 		sum_error = 0.0;
+		
+		_theta_vector.clear();
+		_velocity_theta_vector.clear();
+		_velocity_vector.clear();
+		_velocity_dash_vector.clear();
 		
 		x = 0.0;
 		y = 0.0;
@@ -140,7 +144,7 @@ int main(void)
 		
 		theta_prev = theta;
 		omega_prev = omega;
-		torque = (-1)*GAMMMA_ver*l*(vx*sin(theta) - vy*cos(theta));
+		torque = (-1)*GAMMMA_ver*l*(vx*cos(M_PI/2 - theta) - vy*sin(M_PI/2 - theta));
 		torque_prev = torque;
 
 		while((0 <= x2) && (x2 < x_max) && (0 <= y2) && (y2 < y_max)) {
@@ -179,7 +183,7 @@ int main(void)
 
 
 			// update torque(t)--------------------------------------------------------------
-			torque = (-1)*GAMMMA_ver*l*(vx*sin(theta) - vy*cos(theta));
+			torque = (-1)*GAMMMA_ver*l*v_dash_matrix.getElement(0, 0);
 			
 			
 			// update omega(t)---------------------------------------------------------------
@@ -206,11 +210,13 @@ int main(void)
 			fix_xy(&x_prev, &y_prev, &x1, &y1);
 			fix_xy(&x, &y, &x2, &y2);
 
+			/*
 			std::cout << "step:" << step << "-------------------------------" << std::endl;
 			std::cout << "(x,y)=(" << x << "," << y << ")";
 			std::cout << "(vx,vy)=(" << vx << "," << vy << ")" << std::endl;
 			std::cout << "(fx,fy)=(" << fx << "," << fy << ")" << std::endl;
 			std::cout << "θ=" << theta/M_PI*180 << ",_θ=" << atan(vy/vx)/M_PI*180 << ",ω=" << omega << ",T=" << torque << std::endl;
+			*/
 
 			// calculate error
 			if(step%10 == 0) {
@@ -224,10 +230,15 @@ int main(void)
 				cv::circle(img, cv::Point(x1, y1), 4, cv::Scalar(i*25,0,0), 2);
 				// reality
 				cv::circle(img, cv::Point(_x, _y), 4, cv::Scalar(0,0,255), 2);
+
+
+				// save value
+				_theta_vector.push_back(theta);
+				_velocity_theta_vector.push_back(atan(vy/vx));
+				_velocity_vector.push_back(std::make_pair(vx, vy));
+				_velocity_dash_vector.push_back(std::make_pair(v_dash_matrix.getElement(0, 0), v_dash_matrix.getElement(1, 0)));
 			}
-			
-			// simulate
-			//cv::line(img, cv::Point(x1,y1), cv::Point(x2,y2), cv::Scalar(i*25,0,255));
+
 
 			// next step
 			x_prev = x;
@@ -239,8 +250,15 @@ int main(void)
 			torque_prev = torque;
 		}
 		
+		// save vector
+		theta_vector.push_back(_theta_vector);
+		velocity_theta_vector.push_back(_velocity_theta_vector);
+		velocity_dash_vector.push_back(_velocity_dash_vector);
+		velocity_vector.push_back(_velocity_vector);
+
+
 		// distance error in actual trajectory and simulation trajectory
-		sum_error = sum_error*4.31/1000;
+		sum_error = sum_error*mpp;
 		error.push_back(sum_error);
 		if(min_error == 0.0) min_error = sum_error;
 		if(min_error > sum_error) {
@@ -248,12 +266,31 @@ int main(void)
 		}
 		std::cout << "distance error:" << sum_error << std::endl;
 	}
+
 	
+	// disp vector value
+	std::cout << "vector value" << std::endl;
+	for(int i = 0; i < velocity_dash_vector.size(); i++) {
+		std::cout << i << " ------------" <<  std::endl;
+		for(int j = 0; j < velocity_dash_vector[i].size(); j++) {
+			std::cout << j << " ";
+			std::cout << velocity_dash_vector[i][j].first << " ";
+			std::cout << velocity_dash_vector[i][j].second << " ";
+			std::cout << theta_vector[i][j]/M_PI*180 << " ";
+			std::cout << velocity_theta_vector[i][j]/M_PI*180 << " ";
+			//std::cout << (theta_vector[i][j] - velocity_theta_vector[i][j])/M_PI*180 << " ";
+			//std::cout << velocity_vector[i][j].first << " ";
+			//std::cout << velocity_vector[i][j].second << " ";
+			//std::cout << sqrt(pow(velocity_dash_vector[i][j].first, 2) + pow(velocity_dash_vector[i][j].second, 2)) - sqrt(pow(velocity_vector[i][j].first, 2) + pow(velocity_vector[i][j].second, 2)) << " ";
+			std::cout << std::endl;
+		}
+		std::cout << std::endl;
+	}
 	
+
 	std::cout << "index : distance error, average" << std::endl;
 	
 	for(int i = 0; i < error.size(); i++) {
-		//std::cout << i << ": " << error[i] << ", " << error[i]/(step/10 + 1) << std::endl;
 		std::cout << i << ": " << error[i] << ", " << error[i]/(v.size()/2) << std::endl;
 	}
 	
@@ -263,7 +300,7 @@ int main(void)
 	tmp_str.erase(tmp_str.begin() + 1);
 	img_str += "v_mag_x=" + tmp_str;
 	
-	tmp_str = std::to_string(v_mag_y);
+	tmp_str = std::to_string(abs(v_mag_y));
 	tmp_str.erase(tmp_str.begin() + 1);
 	img_str += "v_mag_y=" + tmp_str;
 	
@@ -287,6 +324,10 @@ int main(void)
 	if(angle >= 10.0) tmp_str.erase(tmp_str.begin() + 2);
 	else tmp_str.erase(tmp_str.begin() + 1);
 	img_str += "angle=" + tmp_str;
+
+	tmp_str = std::to_string(I);
+	tmp_str.erase(tmp_str.begin() + 1);
+	img_str += "I=" + tmp_str;
 	
 	img_str += ".png";
 	cv::imwrite(img_str, img);
@@ -306,8 +347,8 @@ int main(void)
 
 void fix_xy(double* x, double* y, int* x_pixel, int* y_pixel)
 {
-	*x_pixel += (int)((*x)*1000/4.31);
-	*y_pixel += (int)((*y)*1000/4.31);
+	*x_pixel += (int)((*x)/mpp);
+	*y_pixel += (int)((*y)/mpp);
 
 	*y_pixel = Y_INIT*2 - (*y_pixel);
 }
@@ -329,82 +370,20 @@ void update_velocity(Matrix *velocity, Matrix gravity, Matrix gammma)
 	double gam_hor = abs(gammma.getElement(1, 1));
 	
 	// vertical----------------------------
-	//calc_equation(&v_ver, gam_ver, grav_ver, sign_ver);
-	
 	v_ver = v_ver + (-1*gam_ver*v_ver + grav_ver)*dt/m;
 	
 	
 	// horizontal--------------------------
-	//calc_equation(&v_hor, gam_hor, grav_hor, sign_hor);
-
-	/*
-	if(v_hor > 10.0) {
-		v_hor = v_hor + (-1*GAMMMA_ine*abs(v_hor)*v_hor - gam_hor*v_hor + grav_hor)*dt/m;
-	} else {
-		v_hor = v_hor + (-1*gam_hor*v_hor + grav_hor)*dt/m;
-	}
-	*/
 	v_hor = v_hor + (-1*GAMMMA_ine*abs(v_hor)*v_hor - gam_hor*v_hor + grav_hor)*dt/m;
-	
 	
 	// update velocity
 	(*velocity).setMatrix({{v_ver}, {v_hor}});
 }
 
-void calc_equation(double* v, double gammma, double gravity, double sign)
-{
-	// viscous resistance--------------------------------
-	/*
-	(*v) = gravity/gammma + (_v - gravity/gammma)*exp(-1*gammma*dt/m);
-	*/
-	
-	
-	// inertial resistance------------------------------
-	/*
-	double _v = (*v);
-	double C1, C2;
-	if( ((_v > 0)&&(gravity < 0)) || ((_v < 0)&&(gravity > 0)) ) {
-		gravity = abs(gravity);
-		C1 = sqrt(gravity/gammma);
-		
-		(*v) = C1*tan(sign*sqrt(gammma*gravity)*dt/m + atan(_v/C1));
-	} else {
-		gravity = abs(gravity);
-		C1 = sqrt(gravity/gammma);
-		
-		C2 = ((_v - C1)/(_v + C1))*exp(sign*sqrt(gammma*gravity)*dt/m);
-		(*v) = C1*(1 + C2)/(1 - C2);
-	}
-	*/
-
-	// both viscous and inertial resistance----------------
-	/*
-	double _v = (*v);
-	double gammma_v = gammma;
-	double gammma_i = gammma*_GAMMMA_ratio;
-	double C = gravity/(sign*gammma_i) - gammma_v*gammma_v/(4*gammma_i*gammma_i);
-	
-	_v -= gammma_v/(2*sign*gammma_i);
-	
-	if(C > 0) {
-		C = sqrt(C);
-		
-		(*v) = C*tan(atan(_v/C) + sign*gammma_i*C*dt/m);
-	} else {
-		C = sqrt(abs(C));
-		
-		double _C = ((_v - C)/(_v + C))*exp(2*sign*gammma_i*C*dt/m);
-		(*v) = C*(1 + _C)/(1 - _C);
-	}
-	
-	(*v) += gammma_v/(2*sign*gammma_i);
-	*/
-
-}
 
 void file_read(std::vector<int> *v, int data_num)
 {
-	std::ifstream ifs("../python_work/_data_1215.txt");
+	std::ifstream ifs("../python_work/_data_0121.txt");
 	std::string str, buf;
 	std::vector<int> _v;
 	int data_count = 1;
@@ -429,8 +408,8 @@ void file_read(std::vector<int> *v, int data_num)
 	// set parameter
 	X_INIT = _v[0];
 	Y_INIT = _v[1];
-	VX_INIT = (_v[2] - _v[0])*60*4.31/1000;
-	VY_INIT = -1*(_v[3] - _v[1])*60*4.31/1000;
+	VX_INIT = (_v[2] - _v[0])*60*mpp;
+	VY_INIT = -1*(_v[3] - _v[1])*60*mpp;
 	
 	*v = _v;
 }
@@ -453,8 +432,8 @@ void fit_line(std::vector<int> v, int n)
 	
 	double a = (double)(sum_x*sum_y - n*sum_xy)/(sum_x*sum_x - n*sum_xx);
 	
-	VX_INIT = VX_INIT*1000/4.31/60;
-	VY_INIT = VY_INIT*1000/4.31/60;
+	VX_INIT = VX_INIT/mpp/60;
+	VY_INIT = VY_INIT/mpp/60;
 	double v_size = sqrt(VX_INIT*VX_INIT + VY_INIT*VY_INIT);
 	
 	a *= -1;
@@ -464,8 +443,8 @@ void fit_line(std::vector<int> v, int n)
 	VY_INIT = a*VX_INIT;
 
 	// convert -> [m/s]
-	VX_INIT = VX_INIT*60*4.31/1000;
-	VY_INIT = VY_INIT*60*4.31/1000;
+	VX_INIT = VX_INIT*60*mpp;
+	VY_INIT = VY_INIT*60*mpp;
 
 	VX_INIT *= v_mag_x;
 	VY_INIT *= v_mag_y;
@@ -492,14 +471,6 @@ void scale(std::vector<int> *v, double theta)
 		prev_y = y;
 	}
 	
-	/*
-	cv::Mat img = cv::imread("../../res/white_image.png");
-
-	
-	for(int i = 0; i < (*v).size(); i = i + 2) {
-		cv::circle(img, cv::Point((*v)[i], (*v)[i + 1]), 4, cv::Scalar(0, 0, 255), 2);
-	}
-	*/
 	
 	int delta_sum = 0;
 	
@@ -507,16 +478,6 @@ void scale(std::vector<int> *v, double theta)
 		delta_sum += delta_v[i/2 - 1];
 		(*v)[i] += delta_sum;
 	}
-
-	/*
-	for(int i = 0; i < (*v).size(); i = i + 2) {
-		cv::circle(img, cv::Point((*v)[i], (*v)[i + 1]), 4, cv::Scalar(255, 0, 0), 2);
-	}
-
-	cv::imwrite("../../res/error/hoge_15deg.png", img);
-	*/
-
-
 }
 
 
