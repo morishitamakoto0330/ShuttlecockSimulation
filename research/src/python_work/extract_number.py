@@ -1,7 +1,7 @@
 import re
 
 # open file and get data
-f = open("./data_1215.txt")
+f = open("./data_0121.txt")
 data = f.read()
 f.close()
 
@@ -14,16 +14,17 @@ xy_list = list(map(int, numbers))
 
 
 # delete serial number
-s = 9
+s = 127
 length = len(xy_list)
 
 for i in reversed(range(length)):
-    if xy_list[i] == s:
+    if i == 0:
+        xy_list.pop(i)
+    
+    elif xy_list[i] == s and xy_list[i - 1] == -1:
         xy_list.pop(i)
         
         s -= 1
-        if s == 0:
-            break
 
 
 # delete area value
@@ -49,14 +50,9 @@ for i in range(len(xy_list)):
         
         pos.append((x, y))
 
-"""
-# disp pos
-for i in range(len(pos)):
-    print(pos[i])
-"""
 
 # file write
-f = open("./_data_1215.txt", "w")
+f = open("./_data_0121.txt", "w")
 
 for i in range(len(pos)):
     x = pos[i][0]

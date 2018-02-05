@@ -11,11 +11,11 @@
 
 #include "./matrix.hpp"
 
-int X_INIT, Y_INIT;
-int DATA = 11;
+int X_INIT, Y_INIT, x_max, y_max;
+int DATA = 61;
 double VX_INIT, VY_INIT;
 
-std::string img_str = "../../res/image_simulate/0131/data" + std::to_string(DATA) + "-";
+std::string img_str = "../../res/image_simulate/0203/data" + std::to_string(DATA) + "-";
 std::string tmp_str;
 
 const double m = 0.005;      // mass
@@ -23,16 +23,16 @@ const double g = 9.80665;    // gravity
 const double dt = 1.0/600;   // delta time
 const double mpp = 4.17/1000;   // [m/pixel]
 
-const double I = 0.000075;    // inertia
-const double v_mag_x = 1.20;    // velocity magnification(x)
-const double v_mag_y = 1.20;    // velocity magnification(y)
+const double I = 0.00005;    // inertia
+const double v_mag_x = 1.12;    // velocity magnification(x)
+const double v_mag_y = 1.15;    // velocity magnification(y)
 const double angle = 15.0;     // shuttle angle
 
 
 // distance between center of gravity and working point of resistance force
-double l;
+const double l = 0.005;
 // set ratio considering air anisotropy
-double ratio;
+const double ratio = 0.10;
 // adjustable parameter
 double GAMMMA_ver, GAMMMA_hor, GAMMMA_ine;
 
@@ -42,18 +42,27 @@ void fix_xy(double* x, double* y, int* x_pixel, int* y_pixel);
 void calc_T(double theta, Matrix GAMMMA_matrix, Matrix* m);
 void update_velocity(Matrix* velocity, Matrix gravity, Matrix gammma);
 void file_read(std::vector<int> *v, int data_num);
-void fit_line(std::vector<int> v, int n);
+void fit_line(std::vector<int> *v, int n);
 void scale(std::vector<int> *v, double theta);
 
 
 int main(void)
 {
 	std::vector<int> v;  // reality shuttle position
+	// output image
+	cv::Mat img = cv::imread("../../res/white_image.png");
+	// draw net line
+	cv::line(img, cv::Point(1090,0), cv::Point(1090,img.rows), cv::Scalar(255,0,0), 2);
+
+	x_max = img.cols;
+	y_max = img.rows;
+	
+	// get shuttle position
 	file_read(&v, DATA);
 	scale(&v, angle/180*M_PI);
 	
 	// adjust VX_INIT, VY_INIT
-	fit_line(v, 5);
+	fit_line(&v, 5);
 	
 	std::vector<std::vector<double>> theta_vector, velocity_theta_vector;
 	std::vector<double> error, _theta_vector, _velocity_theta_vector;
@@ -61,11 +70,11 @@ int main(void)
 	std::vector<std::vector<std::pair<double, double>>> velocity_vector, velocity_dash_vector;
 	std::vector<std::pair<double, double>> _velocity_vector, _velocity_dash_vector;
 
-	int step, x_max, y_max;
+	int step;
 	int x1, y1, x2, y2;
 	double x, y, vx, vy, x_prev, y_prev, vx_prev, vy_prev;
 	double fx, fy;
-	double theta,  omega, torque, theta_prev, omega_prev, torque_prev;
+	double theta, omega, torque, theta_prev, omega_prev, torque_prev;
 	double sum_error, optimal_ratio, min_error;
 
 	Matrix v_matrix(2, 1);
@@ -79,32 +88,18 @@ int main(void)
 	Matrix v_dash_matrix(2, 1);
 	Matrix g_dash_matrix(2, 1);
 
-	// output image
-	cv::Mat img = cv::imread("../../res/white_image.png");
-
-	// set parameter
-	x_max = img.cols;
-	y_max = img.rows;
-
-	// draw net line
-	cv::line(img, cv::Point(1090,0), cv::Point(1090,img.rows), cv::Scalar(255,0,0), 2);
-
 	min_error = 0.0;
 
 
 	// set parameter ---------------------------------------------------
-	l = 0.010;
-	ratio = 0.01;
-	GAMMMA_ine = 0.0014;
-	GAMMMA_ver = 0.024;
+	GAMMMA_ine = 0.0016;
+	GAMMMA_ver = 0.025;
 	// -------------------------------------------------------
 
 
 	// simulate until the object gets out of (x,y) range
 	for(int i = 1; i <= 1; i++) {
-		//l = 0.010*i;
-		//GAMMMA_ine = 0.0005 + 0.0001*i;
-		//ratio = 0.00 + 0.001*i;
+		//GAMMMA_ine = 0.0010 + 0.0001*i;
 		//GAMMMA_ver = 0.015 + 0.001*i;
 		GAMMMA_hor = GAMMMA_ver*ratio;
 		
@@ -415,14 +410,14 @@ void file_read(std::vector<int> *v, int data_num)
 }
 
 
-void fit_line(std::vector<int> v, int n)
+void fit_line(std::vector<int> *v, int n)
 {
 	int sum_x = 0, sum_y = 0, sum_xx = 0, sum_xy = 0, x, y;
 	int sign_vx = signbit(VX_INIT) ? -1 : 1;
 	
 	for(int i = 0; i < n*2; i += 2) {
-		x = v[i];
-		y = v[i + 1];
+		x = (*v)[i];
+		y = (*v)[i + 1];
 		
 		sum_x += x;
 		sum_y += y;
@@ -448,6 +443,17 @@ void fit_line(std::vector<int> v, int n)
 
 	VX_INIT *= v_mag_x;
 	VY_INIT *= v_mag_y;
+
+
+	// invert shuttle direction if vx < 0
+	if(VX_INIT < 0) {
+		for(int i = 0; i < (*v).size(); i += 2) {
+			(*v)[i] = x_max - (*v)[i];
+		}
+		
+		VX_INIT *= -1;
+		X_INIT = (*v)[0];
+	}
 }
 
 
