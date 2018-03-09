@@ -24,7 +24,8 @@ int main(int argc, char* argv[])
 {
 	// open file
 	//cv::VideoCapture cap("../../res/movie/progressive_1.mp4");
-	cv::VideoCapture cap("../../res/movie/2017_01_18.mp4");
+	//cv::VideoCapture cap("../../res/movie/2017_01_18.mp4");
+	cv::VideoCapture cap("../../res/movie/00007.mp4");
 	
 	// check file open
 	if(!cap.isOpened()) {
@@ -51,6 +52,7 @@ int main(int argc, char* argv[])
 	cv::Mat im_mask, im_mask_old, im_mask_init;
 	cv::Mat labeledImage;
 
+
 	mouseParam mouseEvent;
 
 
@@ -60,8 +62,9 @@ int main(int argc, char* argv[])
 		cap >> frame;
 		frame_count++;
 		
-		if(frame_count > 38000) break;
+		if(frame_count > 120) break;
 	}
+	std::cout << "skip frames : " << frame_count << std::endl;
 
 
 
@@ -238,11 +241,10 @@ int main(int argc, char* argv[])
 		moveObjDetection(im1, im2, im3, &im_mask);
 
 		// remove noise by erode and dilate
-		erode_dilate(im_mask, &im_mask, 1);
+		//erode_dilate(im_mask, &im_mask, 1);
 
 		// label image
 		labeling(im_mask, &labeledImage);
-		
 
 		cv::Mat a,b;
 
@@ -264,7 +266,7 @@ int main(int argc, char* argv[])
 
 		// check frame
 		frame_count++;
-		if(frame_count == prop_frame_count) {
+		if((frame_count-5) == prop_frame_count) {
 			std::cout << "finish movie file." << std::endl;
 			break;
 		}
@@ -379,7 +381,7 @@ int main(int argc, char* argv[])
 
 				if(x != -1) count++;
 				else {
-					if(count <= 20) {
+					if(count <= 10) {
 						for(int j = 0; j < count + 1; j++) {
 							shuttle_trajectory.erase(shuttle_trajectory.begin() + i + 1);
 							shuttle_area_value.erase(shuttle_area_value.begin() + i + 1);
@@ -388,7 +390,7 @@ int main(int argc, char* argv[])
 					count = 0;
 				}
 			}
-			if(count <= 20) {
+			if(count <= 10) {
 				for(int j = 0; j < count + 1; j++) {
 					shuttle_trajectory.erase(shuttle_trajectory.begin());
 					shuttle_area_value.erase(shuttle_area_value.begin());
@@ -414,7 +416,7 @@ int main(int argc, char* argv[])
 					std::cout << "shuttle [No." << count << "]------" << std::endl;
 				}
 			}
-			cv::imwrite("../../trash/image_hoge/hoge0118.png", img_white);
+			cv::imwrite("../../trash/image_hoge/hoge0216.png", img_white);
 			
 			cv::destroyAllWindows();
 

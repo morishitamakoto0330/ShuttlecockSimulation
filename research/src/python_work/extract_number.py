@@ -1,7 +1,7 @@
 import re
 
 # open file and get data
-f = open("./data_0121.txt")
+f = open("./data_0216_9.txt")
 data = f.read()
 f.close()
 
@@ -14,7 +14,7 @@ xy_list = list(map(int, numbers))
 
 
 # delete serial number
-s = 127
+s = 1
 length = len(xy_list)
 
 for i in reversed(range(length)):
@@ -52,7 +52,7 @@ for i in range(len(xy_list)):
 
 
 # file write
-f = open("./_data_0121.txt", "w")
+f = open("./_data_0216_9.txt", "w")
 
 for i in range(len(pos)):
     x = pos[i][0]

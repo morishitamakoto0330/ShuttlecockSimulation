@@ -14,8 +14,9 @@
 
 
 // global variable--------------------------------------------
-int area_threshold = 100;
+int area_threshold = 50;
 int x_threshold = 1090;
+int y_threshold = 100;
 
 // white image name to debug
 std::string img_white_name = "../../res/white_image.png";
@@ -222,7 +223,8 @@ void labeling(cv::Mat src, cv::Mat* dst)
 		x = shuttle_trajectory[track_index[i]-1].first;
 		y = shuttle_trajectory[track_index[i]-1].second;
 		area = shuttle_area_value[track_index[i]-1];
-		direction = signbit(x - shuttle_trajectory[track_index[i]-2].first);
+		//direction = signbit(x - shuttle_trajectory[track_index[i]-2].first);
+		direction = signbit(y - shuttle_trajectory[track_index[i]-2].second);
 		
 		std::cout << "following track" << std::endl;
 		std::cout << "(x,y)=(" << x << "," << y << "), area=" << area;
@@ -235,7 +237,8 @@ void labeling(cv::Mat src, cv::Mat* dst)
 			std::cout << "(_x,_y)=(" << _x << "," << _y << "), _area=" << _area;
 			std::cout << " direction=" << signbit(_x-x) << std::endl;
 
-			if((std::abs(x - _x) <= 150) && (std::abs(y - _y) <= 70) && ((std::abs(area - _area) <= 200) || (area>1000 && _area>1000))  && (signbit(_x - x) == direction)) {
+			//if((std::abs(x - _x) <= 150) && (std::abs(y - _y) <= 70) && ((std::abs(area - _area) <= 200) || (area>1000 && _area>1000))  && (signbit(_x - x) == direction)) {
+			if((std::abs(x - _x) <= 10) && (std::abs(y - _y) <= 70) && ((std::abs(area - _area) <= 100) || (area>1000 && _area>1000))  && (signbit(_y - y) == direction)) {
 				shuttle_trajectory.insert(shuttle_trajectory.begin() + track_index[i], std::make_pair(_x, _y));
 				shuttle_area_value.insert(shuttle_area_value.begin() + track_index[i], _area);
 				track_index[i]++;
@@ -268,8 +271,11 @@ void labeling(cv::Mat src, cv::Mat* dst)
 
 				// check position and area change
 				// and check cross net (x -> _x) or (_x -> x)
-				if((std::abs(x - _x) <= 150) && (std::abs(y - _y) <= 50) && (std::abs(area - _area) <= 50)) {
-					if(((x<=x_threshold)&&(_x>x_threshold)) || ((x>x_threshold)&&(_x<=x_threshold))) {
+				//if((std::abs(x - _x) <= 150) && (std::abs(y - _y) <= 50) && (std::abs(area - _area) <= 50)) {
+				if((std::abs(x - _x) <= 50) && (std::abs(y - _y) <= 70) && (std::abs(area - _area) <= 100)) {
+					//if(((x<=x_threshold)&&(_x>x_threshold)) || ((x>x_threshold)&&(_x<=x_threshold))) {
+					if(((y<=y_threshold)&&(_y>y_threshold)) || ((y>y_threshold)&&(_y<=y_threshold))) {
+					//if(((y<=100)&&(_y>100)) || ((y>100)&&(_y<=100))) {
 						std::cout << "cross net at ";
 						std::cout << "(x,y)=(" << x << "," << y << "), ";
 						std::cout << "(_x,_y)=(" << _x << "," << _y << ")" << std::endl;
@@ -282,7 +288,8 @@ void labeling(cv::Mat src, cv::Mat* dst)
 						// index: prev_index-1, prev_index-2, ..., 0
 						// finish if no shuttle point
 						int now_index = shuttle_trajectory.size();
-						direction = signbit(x - _x); // 1:L->R 0:R->L
+						//direction = signbit(x - _x); // 1:L->R 0:R->L
+						direction = signbit(y - _y);
 						shuttle_trajectory.push_back(std::make_pair(x, y));
 						shuttle_trajectory.push_back(std::make_pair(_x, _y));
 						shuttle_area_value.push_back(area);
@@ -308,7 +315,8 @@ void labeling(cv::Mat src, cv::Mat* dst)
 								std::cout << "(x2,y2)=(" << x2 << "," << y2 << "), area2=" << area2 << std::endl;
 								std::cout << "direction2=" << direction << std::endl;
 								// check around (x,y)
-								if((std::abs(x1 - x2) <= 150) && (std::abs(y1 - y2) <= 70) && ((std::abs(area1 - area2) <= 200) || ((area1>1000)&&(area2>1000))) && (signbit(x2 - x1) == direction)) {
+								//if((std::abs(x1 - x2) <= 150) && (std::abs(y1 - y2) <= 70) && ((std::abs(area1 - area2) <= 200) || ((area1>1000)&&(area2>1000))) && (signbit(x2 - x1) == direction)) {
+								if((std::abs(x1 - x2) <= 50) && (std::abs(y1 - y2) <= 70) && ((std::abs(area1 - area2) <= 200) || ((area1>1000)&&(area2>1000))) && (signbit(y2 - y1) == direction)) {
 									std::cout << "うーん、gooooooooooooooooooooooooood！" << std::endl;
 									// insert (x2, y2) to head in shuttle_trajectory
 									// insert area2 to head in shuttle_area_value

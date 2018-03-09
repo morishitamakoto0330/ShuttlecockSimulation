@@ -12,27 +12,29 @@
 #include "./matrix.hpp"
 
 int X_INIT, Y_INIT, x_max, y_max;
-int DATA = 61;
+int DATA = 1;
 double VX_INIT, VY_INIT;
 
-std::string img_str = "../../res/image_simulate/0203/data" + std::to_string(DATA) + "-";
+std::string img_str = "../../res/image_simulate/0226/data" + std::to_string(DATA) + "-";
 std::string tmp_str;
 
 const double m = 0.005;      // mass
 const double g = 9.80665;    // gravity
 const double dt = 1.0/600;   // delta time
 const double mpp = 4.17/1000;   // [m/pixel]
+const double v_terminal = 6.80;  // terminal velocity
 
 const double I = 0.00005;    // inertia
-const double v_mag_x = 1.12;    // velocity magnification(x)
-const double v_mag_y = 1.15;    // velocity magnification(y)
+const double v_mag_x = 1.05;    // velocity magnification(x)
+const double v_mag_y = 1.07;    // velocity magnification(y)
 const double angle = 15.0;     // shuttle angle
 
 
 // distance between center of gravity and working point of resistance force
 const double l = 0.005;
 // set ratio considering air anisotropy
-const double ratio = 0.10;
+//const double ratio = 0.1;
+double ratio;
 // adjustable parameter
 double GAMMMA_ver, GAMMMA_hor, GAMMMA_ine;
 
@@ -67,8 +69,8 @@ int main(void)
 	std::vector<std::vector<double>> theta_vector, velocity_theta_vector;
 	std::vector<double> error, _theta_vector, _velocity_theta_vector;
 
-	std::vector<std::vector<std::pair<double, double>>> velocity_vector, velocity_dash_vector;
-	std::vector<std::pair<double, double>> _velocity_vector, _velocity_dash_vector;
+	std::vector<std::vector<std::pair<double, double>>> velocity_vector, velocity_dash_vector, g_vector;
+	std::vector<std::pair<double, double>> _velocity_vector, _velocity_dash_vector, _g_vector;
 
 	int step;
 	int x1, y1, x2, y2;
@@ -93,15 +95,22 @@ int main(void)
 
 	// set parameter ---------------------------------------------------
 	GAMMMA_ine = 0.0016;
-	GAMMMA_ver = 0.025;
-	// -------------------------------------------------------
+	GAMMMA_ver = 0.022;
+	//GAMMMA_hor = 0.0023;
+	//ratio = 0.1;
+	// -----------------------------------------------------------------
 
 
 	// simulate until the object gets out of (x,y) range
 	for(int i = 1; i <= 1; i++) {
 		//GAMMMA_ine = 0.0010 + 0.0001*i;
-		//GAMMMA_ver = 0.015 + 0.001*i;
+		//GAMMMA_ver = 0.010 + 0.001*i;
+		ratio = i*0.1;
 		GAMMMA_hor = GAMMMA_ver*ratio;
+		//GAMMMA_ver = GAMMMA_hor*ratio;
+		//GAMMMA_ine = (m*g - GAMMMA_hor*v_terminal)/std::pow(v_terminal, 2);
+		//if(GAMMMA_ine < 0) break;
+
 		
 		GAMMMA_matrix.setMatrix({{-1*GAMMMA_ver, 0}, {0, -1*GAMMMA_hor}});
 		g_matrix.setMatrix({{0.0},{-1*dt*g}});
@@ -143,6 +152,7 @@ int main(void)
 		torque_prev = torque;
 
 		while((0 <= x2) && (x2 < x_max) && (0 <= y2) && (y2 < y_max)) {
+		//while((0 <= x2) && (x2 < x_max) && (0 <= y2) && (y2 < 20000)) {
 			
 			// set Matrix
 			f_matrix.unitMatrix(2, 2);
@@ -205,33 +215,40 @@ int main(void)
 			fix_xy(&x_prev, &y_prev, &x1, &y1);
 			fix_xy(&x, &y, &x2, &y2);
 
-			/*
 			std::cout << "step:" << step << "-------------------------------" << std::endl;
 			std::cout << "(x,y)=(" << x << "," << y << ")";
 			std::cout << "(vx,vy)=(" << vx << "," << vy << ")" << std::endl;
 			std::cout << "(fx,fy)=(" << fx << "," << fy << ")" << std::endl;
 			std::cout << "θ=" << theta/M_PI*180 << ",_θ=" << atan(vy/vx)/M_PI*180 << ",ω=" << omega << ",T=" << torque << std::endl;
-			*/
 
 			// calculate error
 			if(step%10 == 0) {
-				int _step = step/10;
-				int _x = v[_step*2];
-				int _y = v[_step*2+1];
-				sum_error += sqrt(pow(x1-_x, 2) + pow(y1-_y, 2));
+				if((step/10.0 - v.size()/2.0 + 1.0) <= 0) {
+					int _step = step/10;
+					int _x = v[_step*2];
+					int _y = v[_step*2+1];
+					sum_error += sqrt(pow(x1-_x, 2) + pow(y1-_y, 2));
 			
-				// draw shuttle trajectory
-				// simulate
-				cv::circle(img, cv::Point(x1, y1), 4, cv::Scalar(i*25,0,0), 2);
-				// reality
-				cv::circle(img, cv::Point(_x, _y), 4, cv::Scalar(0,0,255), 2);
+					// draw shuttle trajectory
+					// simulate
+					cv::circle(img, cv::Point(x1, y1), 4, cv::Scalar(i*25,0,0), 2);
+					// reality
+					cv::circle(img, cv::Point(_x, _y), 4, cv::Scalar(0,0,255), 2);
+				}
+				/*
+				if((0 <= x1) && (x1 < x_max) && (0 <= y1) && (y1 < y_max)) {
+					cv::circle(img, cv::Point(x1, y1), 4, cv::Scalar(i*25,0,0), 2);
+				}
+				*/
 
 
 				// save value
 				_theta_vector.push_back(theta);
-				_velocity_theta_vector.push_back(atan(vy/vx));
+				if(vx < 0) _velocity_theta_vector.push_back(atan(vy/vx) - M_PI);
+				else _velocity_theta_vector.push_back(atan(vy/vx));
 				_velocity_vector.push_back(std::make_pair(vx, vy));
 				_velocity_dash_vector.push_back(std::make_pair(v_dash_matrix.getElement(0, 0), v_dash_matrix.getElement(1, 0)));
+				_g_vector.push_back(std::make_pair(g_dash_matrix.getElement(0, 0), g_dash_matrix.getElement(1, 0)));
 			}
 
 
@@ -250,6 +267,7 @@ int main(void)
 		velocity_theta_vector.push_back(_velocity_theta_vector);
 		velocity_dash_vector.push_back(_velocity_dash_vector);
 		velocity_vector.push_back(_velocity_vector);
+		g_vector.push_back(_g_vector);
 
 
 		// distance error in actual trajectory and simulation trajectory
@@ -262,26 +280,53 @@ int main(void)
 		std::cout << "distance error:" << sum_error << std::endl;
 	}
 
-	
 	// disp vector value
+	double _v_x, _v_y, _v_ver, _v_hor, _g_ver, _g_hor, _f_ver, _f_hor;
+
+	// output stream
+	std::ofstream ofs("../../res/graph_data/0226/tmp.dat", std::ios::out);
+
 	std::cout << "vector value" << std::endl;
 	for(int i = 0; i < velocity_dash_vector.size(); i++) {
 		std::cout << i << " ------------" <<  std::endl;
 		for(int j = 0; j < velocity_dash_vector[i].size(); j++) {
+			_v_x = velocity_vector[i][j].first;
+			_v_y = velocity_vector[i][j].second;
+			_v_ver = velocity_dash_vector[i][j].first;
+			_v_hor = velocity_dash_vector[i][j].second;
+			_g_ver = g_vector[i][j].first;
+			_g_hor = g_vector[i][j].second;
+			
+			
 			std::cout << j << " ";
-			std::cout << velocity_dash_vector[i][j].first << " ";
-			std::cout << velocity_dash_vector[i][j].second << " ";
+			std::cout << _v_ver << " ";
+			std::cout << _v_hor << " ";
 			std::cout << theta_vector[i][j]/M_PI*180 << " ";
 			std::cout << velocity_theta_vector[i][j]/M_PI*180 << " ";
 			//std::cout << (theta_vector[i][j] - velocity_theta_vector[i][j])/M_PI*180 << " ";
-			//std::cout << velocity_vector[i][j].first << " ";
-			//std::cout << velocity_vector[i][j].second << " ";
-			//std::cout << sqrt(pow(velocity_dash_vector[i][j].first, 2) + pow(velocity_dash_vector[i][j].second, 2)) - sqrt(pow(velocity_vector[i][j].first, 2) + pow(velocity_vector[i][j].second, 2)) << " ";
+			//std::cout << _v_x << " ";
+			//std::cout << _v_y << " ";
+			//std::cout << sqrt(pow(_v_ver, 2) + pow(_v_hor, 2)) << " "; 
+			//std::cout << sqrt(pow(_v_x, 2) + pow(_v_y, 2)) << " "; 
+			//std::cout << _g_ver << " ";
+			//std::cout << _g_hor << " ";
+			
+			_f_ver = -1*GAMMMA_ver*_v_ver;
+			_f_hor = -1*GAMMMA_hor*_v_hor - GAMMMA_ine*abs(_v_hor)*_v_hor;
+			//std::cout << sqrt(_f_ver*_f_ver + _f_hor*_f_hor) << " ";
 			std::cout << std::endl;
+			
+
+			ofs << j << " ";
+			ofs << _v_ver << " ";
+			ofs << _v_hor << " ";
+			ofs << theta_vector[i][j]/M_PI*180 << " ";
+			ofs << velocity_theta_vector[i][j]/M_PI*180 << " ";
+			ofs << std::endl;
 		}
 		std::cout << std::endl;
+		ofs << std::endl;
 	}
-	
 
 	std::cout << "index : distance error, average" << std::endl;
 	
@@ -300,7 +345,8 @@ int main(void)
 	img_str += "v_mag_y=" + tmp_str;
 	
 	tmp_str = std::to_string(ratio);
-	tmp_str.erase(tmp_str.begin() + 1);
+	if(ratio >= 10.0) tmp_str.erase(tmp_str.begin() + 2);
+	else tmp_str.erase(tmp_str.begin() + 1);
 	img_str += "ratio=" + tmp_str;
 	
 	tmp_str = std::to_string(GAMMMA_ver);

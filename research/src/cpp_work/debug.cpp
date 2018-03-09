@@ -69,6 +69,15 @@ void writePoint(int x, int y, cv::Mat* img)
 }
 
 
+// write string
+void write_string_to_file(std::string str, std::string file_name)
+{
+	// output stream
+	std::ofstream ofs(file_name, std::ios::out);
+	
+	// output
+	ofs << str << std::endl;
+}
 
 
 

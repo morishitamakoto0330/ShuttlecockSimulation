@@ -16,6 +16,11 @@ void scale(std::vector<int> *v, double theta);
 
 int main(void)
 {
+
+	cv::Mat img = cv::imread("../../trash/myface.jpg");
+	cvtColor(img, img, cv::COLOR_BGR2GRAY);
+	cv::imwrite("../../trash/_myface.jpg", img);
+	/*
 	Matrix m1(2, 1);
 	Matrix m2(2, 2);
 	
@@ -31,6 +36,7 @@ int main(void)
 
 	// result
 	m2.disp();
+	*/
 
 
 /*
@@ -319,7 +325,6 @@ int main(void)
 	
 	
 	
-	
 	/*
 	int x, y, key;
 
@@ -327,7 +332,7 @@ int main(void)
 	cv::Mat frame, img;
 	mouseParam mouseEvent;
 	
-	cv::VideoCapture cap("../../res/movie/2017_01_18.mp4");
+	cv::VideoCapture cap("../../res/movie/00009.mp4");
 
 	if(!cap.isOpened()) return -1;
 	std::cout << "mp4 file open." << std::endl;
